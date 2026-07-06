@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://pixel_dragon_city_dialogue_panel"]
+
+[ext_resource type="Texture2D" path="res://assets/portraits/character_portrait_direction_v1.png" id="1_portrait"]
+[ext_resource type="Script" path="res://scripts/ui/dialogue_panel.gd" id="2_dialogue_script"]
+
+[node name="DialoguePanel" type="Control"]
+visible = false
+custom_minimum_size = Vector2(760, 220)
+script = ExtResource("2_dialogue_script")
+
+[node name="PortraitFrame" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 156.0
+offset_bottom = 196.0
+
+[node name="PortraitPreview" type="TextureRect" parent="PortraitFrame"]
+layout_mode = 2
+texture = ExtResource("1_portrait")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 0.0
+offset_right = 420.0
+offset_bottom = 28.0
+text = ""
+
+[node name="DialogueText" type="Label" parent="."]
+layout_mode = 0
+offset_left = 176.0
+offset_top = 40.0
+offset_right = 728.0
+offset_bottom = 126.0
+text = ""
+autowrap_mode = 2
+
+[node name="NextButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 548.0
+offset_top = 150.0
+offset_right = 638.0
+offset_bottom = 190.0
+text = "Next"
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 648.0
+offset_top = 150.0
+offset_right = 738.0
+offset_bottom = 190.0
+text = "Close"
+
+[node name="ShopButton" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 176.0
+offset_top = 150.0
+offset_right = 286.0
+offset_bottom = 190.0
+text = "Shop"
+
+[node name="QuestButton" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 296.0
+offset_top = 150.0
+offset_right = 426.0
+offset_bottom = 190.0
+text = "Quest"

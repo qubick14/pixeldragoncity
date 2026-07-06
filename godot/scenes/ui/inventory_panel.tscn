@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3 uid="uid://pixel_dragon_city_inventory_panel"]
+
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="1_inventory_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip.tscn" id="2_tooltip_scene"]
+
+[node name="InventoryPanel" type="Control"]
+custom_minimum_size = Vector2(360, 360)
+script = ExtResource("1_inventory_script")
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 180.0
+offset_bottom = 28.0
+text = "Inventory"
+
+[node name="SlotGrid" type="GridContainer" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 40.0
+offset_right = 280.0
+offset_bottom = 340.0
+columns = 5
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Tooltip" parent="." instance=ExtResource("2_tooltip_scene")]
+visible = false
+offset_left = 292.0
+offset_top = 40.0

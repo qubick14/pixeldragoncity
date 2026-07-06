@@ -1,0 +1,107 @@
+[gd_scene load_steps=6 format=3 uid="uid://pixel_dragon_city_black_wolf_forest"]
+
+[ext_resource type="PackedScene" path="res://scenes/actors/wild_wolf.tscn" id="1_wild_wolf"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
+size = Vector2(1700, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bottom"]
+size = Vector2(1700, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_side"]
+size = Vector2(40, 1000)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_side2"]
+size = Vector2(40, 1000)
+
+[node name="BlackWolfForest" type="Node2D"]
+
+[node name="ForestGround" type="Polygon2D" parent="."]
+color = Color(0.13, 0.28, 0.18, 1)
+polygon = PackedVector2Array(-820, -480, 820, -480, 820, 480, -820, 480)
+
+[node name="MainTrail" type="Polygon2D" parent="."]
+color = Color(0.34, 0.29, 0.2, 1)
+polygon = PackedVector2Array(-740, 120, -420, 40, -110, -20, 220, -70, 650, -190, 710, -80, 260, 56, -120, 94, -430, 130, -710, 220)
+
+[node name="WolfZone" type="Polygon2D" parent="."]
+color = Color(0.17, 0.36, 0.22, 1)
+polygon = PackedVector2Array(-210, -190, 210, -220, 300, 70, -110, 150)
+
+[node name="BossClearing" type="Polygon2D" parent="."]
+color = Color(0.11, 0.2, 0.15, 1)
+polygon = PackedVector2Array(420, -340, 760, -300, 760, 30, 410, 58, 330, -130)
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+
+[node name="ForestEntry" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(-650, 150)
+
+[node name="TransitionPoints" type="Node2D" parent="."]
+
+[node name="ToGreenwoodVillage" type="Marker2D" parent="TransitionPoints"]
+position = Vector2(-720, 170)
+
+[node name="MonsterSpawns" type="Node2D" parent="."]
+
+[node name="WildWolfSpawns" type="Node2D" parent="MonsterSpawns"]
+
+[node name="WolfSpawnA" type="Marker2D" parent="MonsterSpawns/WildWolfSpawns"]
+position = Vector2(-90, -40)
+
+[node name="WolfSpawnB" type="Marker2D" parent="MonsterSpawns/WildWolfSpawns"]
+position = Vector2(70, -120)
+
+[node name="WolfSpawnC" type="Marker2D" parent="MonsterSpawns/WildWolfSpawns"]
+position = Vector2(170, 20)
+
+[node name="BlackWolfLeaderSpawn" type="Marker2D" parent="MonsterSpawns"]
+position = Vector2(560, -150)
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="WildWolfA" parent="Enemies" instance=ExtResource("1_wild_wolf")]
+position = Vector2(-90, -40)
+
+[node name="WildWolfB" parent="Enemies" instance=ExtResource("1_wild_wolf")]
+position = Vector2(70, -120)
+
+[node name="WildWolfC" parent="Enemies" instance=ExtResource("1_wild_wolf")]
+position = Vector2(170, 20)
+
+[node name="BlackWolfLeader" parent="Enemies" instance=ExtResource("1_wild_wolf")]
+position = Vector2(560, -150)
+scale = Vector2(1.28, 1.28)
+max_hp = 220
+attack = 16
+defense = 4
+monster_id = "black_wolf_leader"
+move_speed = 75.0
+aggro_range = 340.0
+attack_range = 54.0
+
+[node name="MapBounds" type="Node2D" parent="."]
+
+[node name="TopWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(0, -500)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/TopWall"]
+shape = SubResource("RectangleShape2D_top")
+
+[node name="BottomWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(0, 500)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/BottomWall"]
+shape = SubResource("RectangleShape2D_bottom")
+
+[node name="LeftWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(-860, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/LeftWall"]
+shape = SubResource("RectangleShape2D_side")
+
+[node name="RightWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(860, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/RightWall"]
+shape = SubResource("RectangleShape2D_side2")

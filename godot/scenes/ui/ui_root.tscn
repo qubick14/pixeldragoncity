@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3 uid="uid://pixel_dragon_city_ui_root"]
+
+[ext_resource type="Script" path="res://scripts/ui/ui_root.gd" id="1_ui_root_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="3_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/ui/equipment_panel.tscn" id="4_equipment"]
+[ext_resource type="PackedScene" path="res://scenes/ui/dialogue_panel.tscn" id="5_dialogue"]
+[ext_resource type="PackedScene" path="res://scenes/ui/shop_panel.tscn" id="6_shop"]
+
+[node name="UIRoot" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_ui_root_script")
+
+[node name="HUD" parent="." instance=ExtResource("2_hud")]
+
+[node name="InventoryPanel" parent="." instance=ExtResource("3_inventory")]
+visible = false
+offset_left = 64.0
+offset_top = 96.0
+offset_right = 424.0
+offset_bottom = 456.0
+
+[node name="EquipmentPanel" parent="." instance=ExtResource("4_equipment")]
+visible = false
+offset_left = 1040.0
+offset_top = 96.0
+offset_right = 1460.0
+offset_bottom = 526.0
+
+[node name="DialoguePanel" parent="." instance=ExtResource("5_dialogue")]
+visible = false
+offset_left = 420.0
+offset_top = 610.0
+offset_right = 1180.0
+offset_bottom = 830.0
+
+[node name="ShopPanel" parent="." instance=ExtResource("6_shop")]
+visible = false
+offset_left = 520.0
+offset_top = 140.0
+offset_right = 1080.0
+offset_bottom = 560.0

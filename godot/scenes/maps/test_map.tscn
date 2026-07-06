@@ -1,0 +1,195 @@
+[gd_scene load_steps=7 format=3 uid="uid://pixel_dragon_city_test_map"]
+
+[ext_resource type="Texture2D" path="res://assets/tilesets/environment_tileset_v1.png" id="1_tileset"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/test_map_background_v1.png" id="2_background"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
+size = Vector2(1680, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bottom"]
+size = Vector2(1680, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_side"]
+size = Vector2(40, 1080)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_side2"]
+size = Vector2(40, 1080)
+
+[node name="TestMap" type="Node2D"]
+
+[node name="GeneratedSceneBackground" type="Sprite2D" parent="."]
+z_index = -20
+scale = Vector2(1.02, 1.02)
+texture = ExtResource("2_background")
+
+[node name="GeneratedSceneArt" type="Node2D" parent="."]
+visible = false
+
+[node name="GrassTileA" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(-560, -280)
+scale = Vector2(2.2, 2.2)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(16, 16, 144, 144)
+
+[node name="GrassTileB" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(-260, -220)
+scale = Vector2(2.2, 2.2)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(16, 16, 144, 144)
+
+[node name="PathTileA" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(-30, -70)
+scale = Vector2(2.4, 2.4)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(184, 16, 174, 144)
+
+[node name="ForestGroundTile" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(360, -210)
+scale = Vector2(2.3, 2.3)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(378, 16, 174, 144)
+
+[node name="StoneTile" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(-420, 170)
+scale = Vector2(2.0, 2.0)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(568, 16, 174, 144)
+
+[node name="MineGroundTile" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(500, 160)
+scale = Vector2(2.2, 2.2)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(760, 16, 174, 144)
+
+[node name="HouseArt" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(-520, -250)
+scale = Vector2(1.35, 1.35)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(642, 392, 182, 120)
+
+[node name="TreeArtA" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(260, -210)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(190, 552, 150, 146)
+
+[node name="TreeArtB" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(470, -110)
+scale = Vector2(1.05, 1.05)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(372, 554, 108, 142)
+
+[node name="MineEntranceArt" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(540, 210)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(1060, 714, 150, 110)
+
+[node name="OreArt" type="Sprite2D" parent="GeneratedSceneArt"]
+position = Vector2(380, 210)
+scale = Vector2(1.1, 1.1)
+texture = ExtResource("1_tileset")
+region_enabled = true
+region_rect = Rect2(646, 710, 120, 110)
+
+[node name="Ground" type="Polygon2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0.28)
+color = Color(0.3, 0.38, 0.29, 1)
+polygon = PackedVector2Array(-800, -500, 800, -500, 800, 500, -800, 500)
+
+[node name="MainPath" type="Polygon2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0.25)
+color = Color(0.55, 0.45, 0.3, 1)
+polygon = PackedVector2Array(-800, 120, -800, 20, -160, -80, 140, -20, 800, -160, 800, -40, 170, 70, -120, 15)
+
+[node name="VillagePatch" type="Polygon2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0.2)
+color = Color(0.38, 0.43, 0.34, 1)
+polygon = PackedVector2Array(-720, -420, -290, -420, -250, -170, -650, -120)
+
+[node name="ForestPatch" type="Polygon2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0.2)
+color = Color(0.22, 0.32, 0.25, 1)
+polygon = PackedVector2Array(230, -450, 760, -440, 760, 250, 320, 170)
+
+[node name="HouseBody" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(-520, -230)
+color = Color(0.54, 0.45, 0.33, 1)
+polygon = PackedVector2Array(-52, -24, 52, -24, 52, 48, -52, 48)
+
+[node name="HouseRoof" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(-520, -230)
+color = Color(0.42, 0.19, 0.18, 1)
+polygon = PackedVector2Array(-68, -24, 0, -74, 68, -24)
+
+[node name="Tree1" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(360, -260)
+color = Color(0.31, 0.49, 0.29, 1)
+polygon = PackedVector2Array(0, -78, 42, -26, 24, -26, 52, 10, 12, 10, 12, 34, -12, 34, -12, 10, -52, 10, -24, -26, -42, -26)
+
+[node name="Tree1Trunk" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(360, -260)
+color = Color(0.35, 0.23, 0.17, 1)
+polygon = PackedVector2Array(-8, 4, 8, 4, 8, 38, -8, 38)
+
+[node name="Tree2" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(520, -120)
+color = Color(0.25, 0.42, 0.27, 1)
+polygon = PackedVector2Array(0, -76, 40, -28, 22, -28, 50, 8, 14, 8, 14, 32, -14, 32, -14, 8, -50, 8, -22, -28, -40, -28)
+
+[node name="Tree2Trunk" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(520, -120)
+color = Color(0.31, 0.2, 0.15, 1)
+polygon = PackedVector2Array(-8, 2, 8, 2, 8, 36, -8, 36)
+
+[node name="Rock" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(-180, 170)
+color = Color(0.42, 0.46, 0.43, 1)
+polygon = PackedVector2Array(-34, -10, -12, -28, 22, -24, 42, -4, 28, 18, -22, 20)
+
+[node name="MapBounds" type="Node2D" parent="."]
+
+[node name="TopWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(0, -520)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/TopWall"]
+shape = SubResource("RectangleShape2D_top")
+
+[node name="BottomWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(0, 520)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/BottomWall"]
+shape = SubResource("RectangleShape2D_bottom")
+
+[node name="LeftWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(-820, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/LeftWall"]
+shape = SubResource("RectangleShape2D_side")
+
+[node name="RightWall" type="StaticBody2D" parent="MapBounds"]
+position = Vector2(820, 0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MapBounds/RightWall"]
+shape = SubResource("RectangleShape2D_side2")

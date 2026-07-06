@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3 uid="uid://pixel_dragon_city_shop_item_row"]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_item_row.gd" id="1_row_script"]
+
+[node name="ShopItemRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(420, 40)
+theme_override_constants/separation = 8
+script = ExtResource("1_row_script")
+
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 28)
+text = ""
+
+[node name="KindLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(88, 28)
+text = ""
+
+[node name="PriceLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(56, 28)
+text = "0"
+horizontal_alignment = 2
+
+[node name="BuyButton" type="Button" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(72, 32)
+text = "Buy"

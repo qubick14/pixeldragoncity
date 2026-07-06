@@ -1,0 +1,42 @@
+[gd_scene load_steps=11 format=3 uid="uid://pixel_dragon_city_main"]
+
+[ext_resource type="Script" path="res://scripts/game/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/art_preview.tscn" id="5_art_preview"]
+[ext_resource type="PackedScene" path="res://scenes/ui/menu_overlay.tscn" id="6_menu_overlay"]
+[ext_resource type="Script" path="res://scripts/game/main_menu_controller.gd" id="7_menu_controller"]
+[ext_resource type="Script" path="res://scripts/game/map_manager.gd" id="8_map_manager"]
+[ext_resource type="Script" path="res://scripts/game/quest_manager.gd" id="9_quest_manager"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ui_root.tscn" id="10_ui_root"]
+[ext_resource type="Script" path="res://scripts/game/save_manager.gd" id="11_save_manager"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="MenuController" type="Node2D" parent="."]
+script = ExtResource("7_menu_controller")
+
+[node name="MapRoot" type="Node2D" parent="."]
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="MapManager" type="Node" parent="."]
+script = ExtResource("8_map_manager")
+
+[node name="QuestManager" type="Node" parent="."]
+script = ExtResource("9_quest_manager")
+
+[node name="SaveManager" type="Node" parent="."]
+script = ExtResource("11_save_manager")
+
+[node name="HUD" parent="." instance=ExtResource("4_hud")]
+
+[node name="ArtPreview" parent="." instance=ExtResource("5_art_preview")]
+
+[node name="MenuOverlay" parent="." instance=ExtResource("6_menu_overlay")]
+
+[node name="UIRoot" parent="." instance=ExtResource("10_ui_root")]
+
+[connection signal="pressed" from="HUD/BottomPanel/MenuButtons/InventoryButton" to="MenuController" method="_on_inventory_button_pressed"]
+[connection signal="pressed" from="HUD/BottomPanel/MenuButtons/EquipmentButton" to="MenuController" method="_on_equipment_button_pressed"]

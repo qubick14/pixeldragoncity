@@ -1,0 +1,59 @@
+[gd_scene load_steps=9 format=3 uid="uid://pixel_dragon_city_wild_wolf"]
+
+[ext_resource type="Script" path="res://scripts/actors/wild_wolf_controller.gd" id="1_controller"]
+[ext_resource type="Texture2D" path="res://assets/sprites/monster_sheet.png" id="2_monster_sheet"]
+[ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="3_health_component"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="4_hurtbox"]
+[ext_resource type="Script" path="res://scripts/combat/hitbox.gd" id="5_hitbox"]
+[ext_resource type="PackedScene" path="res://scenes/ui/health_bar.tscn" id="6_health_bar"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(30, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_attack"]
+size = Vector2(34, 22)
+
+[node name="WildWolf" type="CharacterBody2D"]
+script = ExtResource("1_controller")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health_component")
+max_hp = 50
+defense = 1
+current_hp = 50
+
+[node name="VisualRoot" type="Node2D" parent="."]
+
+[node name="GeneratedSprite" type="Sprite2D" parent="VisualRoot"]
+position = Vector2(0, -22)
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("2_monster_sheet")
+region_enabled = true
+region_rect = Rect2(0, 0, 192, 192)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -8)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("4_hurtbox")
+health_component_path = NodePath("../HealthComponent")
+
+[node name="HurtShape" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, -18)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="AttackHitbox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 4
+monitoring = false
+script = ExtResource("5_hitbox")
+attack = 8
+enabled = false
+
+[node name="AttackShape" type="CollisionShape2D" parent="AttackHitbox"]
+shape = SubResource("RectangleShape2D_attack")
+
+[node name="HealthBar" parent="." instance=ExtResource("6_health_bar")]

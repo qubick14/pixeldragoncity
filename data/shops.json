@@ -1,0 +1,86 @@
+[
+  {
+    "id": "merchant_general_store",
+    "name": "青木杂货铺",
+    "keeper_npc_id": "merchant",
+    "items": [
+      {
+        "item_id": "small_health_potion",
+        "display_name": "小型生命药水",
+        "kind": "consumable",
+        "quality": "common",
+        "price": 8,
+        "sell_price": 4,
+        "description": "恢复少量生命，适合新手在野外保命。",
+        "icon_index": 4
+      },
+      {
+        "item_id": "green_herb",
+        "display_name": "青叶草",
+        "kind": "material",
+        "quality": "common",
+        "price": 5,
+        "sell_price": 2,
+        "description": "常见草药，可作为药水材料的占位商品。",
+        "icon_index": 7
+      },
+      {
+        "item_id": "town_scroll",
+        "display_name": "回村卷轴",
+        "kind": "consumable",
+        "quality": "common",
+        "price": 20,
+        "sell_price": 8,
+        "description": "后续用于返回安全区域；v0.4 仅作为商店 UI 占位。",
+        "icon_index": 8
+      },
+      {
+        "item_id": "wolf_pelt",
+        "display_name": "狼皮",
+        "kind": "material",
+        "quality": "common",
+        "price": 3,
+        "sell_price": 1,
+        "description": "野狼身上的皮毛，商人愿意低价收购。",
+        "icon_index": 6
+      }
+    ]
+  },
+  {
+    "id": "blacksmith_basic_gear",
+    "name": "石衡铁匠铺",
+    "keeper_npc_id": "blacksmith",
+    "items": [
+      {
+        "item_id": "iron_sword",
+        "display_name": "铁剑",
+        "kind": "weapon",
+        "quality": "common",
+        "price": 30,
+        "sell_price": 12,
+        "description": "比木剑更可靠的基础武器。",
+        "icon_index": 1
+      },
+      {
+        "item_id": "leather_armor",
+        "display_name": "皮甲",
+        "kind": "armor",
+        "quality": "uncommon",
+        "price": 45,
+        "sell_price": 18,
+        "description": "轻便皮甲，提供基础防护和少量生命。",
+        "icon_index": 3
+      },
+      {
+        "item_id": "bronze_helmet",
+        "display_name": "青铜头盔",
+        "kind": "helmet",
+        "quality": "common",
+        "price": 24,
+        "sell_price": 10,
+        "description": "装备槽位演示用头盔，正式属性后续接入。",
+        "icon_index": 9
+      }
+    ]
+  }
+]

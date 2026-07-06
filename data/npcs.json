@@ -1,0 +1,33 @@
+[
+  {
+    "id": "village_chief",
+    "name": "青木村长",
+    "portrait": "character_portrait_direction_v1",
+    "dialogue": [
+      "黑狼林最近不太安宁，年轻的旅人要多加小心。",
+      "先熟悉你的背包、装备和药水，别急着深入森林。",
+      "等你准备好了，再来找我谈第一件真正的委托。"
+    ],
+    "shop_id": ""
+  },
+  {
+    "id": "merchant",
+    "name": "行商阿岚",
+    "portrait": "character_portrait_direction_v1",
+    "dialogue": [
+      "背包要留几个空格，野外捡到的东西才装得下。",
+      "我这里有药水和常用杂货，先看看价格也好。"
+    ],
+    "shop_id": "merchant_general_store"
+  },
+  {
+    "id": "blacksmith",
+    "name": "铁匠石衡",
+    "portrait": "character_portrait_direction_v1",
+    "dialogue": [
+      "好武器不只看锋利，也要看你挥得稳不稳。",
+      "这些基础装备足够你撑过黑狼林外围。"
+    ],
+    "shop_id": "blacksmith_basic_gear"
+  }
+]

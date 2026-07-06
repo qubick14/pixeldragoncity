@@ -1,0 +1,67 @@
+[
+  {
+    "id": "wooden_sword",
+    "name": "木剑",
+    "type": "weapon",
+    "quality": "common",
+    "level": 1,
+    "stats": {
+      "attack": 2
+    },
+    "price": 5
+  },
+  {
+    "id": "iron_sword",
+    "name": "铁剑",
+    "type": "weapon",
+    "quality": "common",
+    "level": 1,
+    "stats": {
+      "attack": 5
+    },
+    "price": 30
+  },
+  {
+    "id": "cloth_armor",
+    "name": "布衣",
+    "type": "armor",
+    "quality": "common",
+    "level": 1,
+    "stats": {
+      "defense": 1,
+      "max_hp": 5
+    },
+    "price": 10
+  },
+  {
+    "id": "leather_armor",
+    "name": "皮甲",
+    "type": "armor",
+    "quality": "uncommon",
+    "level": 1,
+    "stats": {
+      "defense": 3,
+      "max_hp": 15
+    },
+    "price": 45
+  },
+  {
+    "id": "small_health_potion",
+    "name": "小型生命药水",
+    "type": "consumable",
+    "quality": "common",
+    "level": 1,
+    "effect": {
+      "heal_hp": 30
+    },
+    "price": 8
+  },
+  {
+    "id": "wolf_pelt",
+    "name": "狼皮",
+    "type": "material",
+    "quality": "common",
+    "level": 1,
+    "price": 3
+  }
+]

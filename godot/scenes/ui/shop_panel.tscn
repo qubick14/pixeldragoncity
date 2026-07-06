@@ -1,0 +1,63 @@
+[gd_scene load_steps=3 format=3 uid="uid://pixel_dragon_city_shop_panel"]
+
+[ext_resource type="Script" path="res://scripts/ui/shop_panel.gd" id="1_shop_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip.tscn" id="2_tooltip_scene"]
+
+[node name="ShopPanel" type="Control"]
+visible = false
+custom_minimum_size = Vector2(560, 420)
+script = ExtResource("1_shop_script")
+
+[node name="ShopNameLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 260.0
+offset_bottom = 28.0
+text = ""
+
+[node name="GoldLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 360.0
+offset_top = 0.0
+offset_right = 540.0
+offset_bottom = 28.0
+text = "Gold 0"
+horizontal_alignment = 2
+
+[node name="BuyTabButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 42.0
+offset_right = 92.0
+offset_bottom = 78.0
+text = "Buy"
+
+[node name="SellTabButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 102.0
+offset_top = 42.0
+offset_right = 194.0
+offset_bottom = 78.0
+text = "Sell"
+
+[node name="ItemList" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 92.0
+offset_right = 440.0
+offset_bottom = 390.0
+theme_override_constants/separation = 6
+
+[node name="Tooltip" parent="." instance=ExtResource("2_tooltip_scene")]
+visible = false
+offset_left = 456.0
+offset_top = 92.0
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 450.0
+offset_top = 42.0
+offset_right = 540.0
+offset_bottom = 78.0
+text = "Close"

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "greenwood_village",
+    "name": "青木村",
+    "type": "town",
+    "default_spawn": "village_spawn",
+    "spawns": [
+      { "id": "village_spawn", "name": "村中出生点", "position_hint": "village_center_south" }
+    ],
+    "connections": ["black_wolf_forest"],
+    "transitions": [
+      {
+        "id": "to_black_wolf_forest",
+        "target_map_id": "black_wolf_forest",
+        "target_spawn_id": "forest_entry"
+      }
+    ],
+    "npcs": ["village_chief", "merchant", "blacksmith"],
+    "monster_spawns": []
+  },
+  {
+    "id": "black_wolf_forest",
+    "name": "黑狼林",
+    "type": "field",
+    "default_spawn": "forest_entry",
+    "spawns": [
+      { "id": "forest_entry", "name": "青木村方向入口", "position_hint": "forest_west_entry" }
+    ],
+    "connections": ["greenwood_village", "blackstone_mine"],
+    "transitions": [
+      {
+        "id": "to_greenwood_village",
+        "target_map_id": "greenwood_village",
+        "target_spawn_id": "village_spawn"
+      }
+    ],
+    "npcs": [],
+    "monster_spawns": [
+      { "monster_id": "wild_rabbit", "count": 4 },
+      { "monster_id": "wild_wolf", "count": 8 },
+      { "monster_id": "black_wolf_leader", "count": 1 }
+    ]
+  },
+  {
+    "id": "blackstone_mine",
+    "name": "黑石矿洞",
+    "type": "dungeon",
+    "default_spawn": "mine_entry",
+    "spawns": [
+      { "id": "mine_entry", "name": "矿洞入口", "position_hint": "future_content" }
+    ],
+    "connections": ["black_wolf_forest"],
+    "transitions": [],
+    "npcs": [],
+    "monster_spawns": []
+  }
+]

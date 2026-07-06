@@ -1,0 +1,32 @@
+[
+  {
+    "id": "basic_slash",
+    "name": "普通斩击",
+    "class": "swordsman",
+    "level": 1,
+    "type": "melee",
+    "multiplier": 1.0,
+    "cooldown": 0.45,
+    "mp_cost": 0
+  },
+  {
+    "id": "heavy_slash",
+    "name": "重斩",
+    "class": "swordsman",
+    "level": 1,
+    "type": "melee",
+    "multiplier": 1.8,
+    "cooldown": 1.2,
+    "mp_cost": 5
+  },
+  {
+    "id": "fireball",
+    "name": "火球术",
+    "class": "mage",
+    "level": 1,
+    "type": "projectile",
+    "multiplier": 1.5,
+    "cooldown": 0.8,
+    "mp_cost": 8
+  }
+]

@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3 uid="uid://pixel_dragon_city_item_tooltip"]
+
+[ext_resource type="Script" path="res://scripts/ui/item_tooltip.gd" id="1_tooltip_script"]
+
+[node name="ItemTooltip" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(260, 120)
+script = ExtResource("1_tooltip_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NameLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = ""
+
+[node name="KindLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = ""
+
+[node name="QualityLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = ""
+
+[node name="DescriptionLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+
+[node name="PriceLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = ""

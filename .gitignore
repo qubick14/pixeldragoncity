@@ -1,0 +1,34 @@
+# Local agent/tool state
+.superpowers/
+.codex/
+.agents/
+
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Godot generated cache
+godot/.godot/
+godot/.import/
+
+# Godot exports and local builds
+build/
+dist/
+exports/
+*.app/
+*.dmg
+*.zip
+*.pck
+*.exe
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Local screenshots / captures
+*.mov
+*.mp4
