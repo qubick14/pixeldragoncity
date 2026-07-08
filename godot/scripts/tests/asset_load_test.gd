@@ -9,6 +9,7 @@ const ASSET_PATHS := [
 	"res://assets/items/item_icons_sheet.png",
 	"res://assets/tilesets/environment_tileset_v1.png",
 	"res://assets/ui/ui_atlas.png",
+	"res://assets/portraits/swordsman_portrait_v1.png",
 	"res://assets/portraits/character_portrait_direction_v1.png",
 	"res://assets/portraits/monster_portrait_direction_v1.png",
 	"res://assets/backgrounds/test_map_background_v1.png",
@@ -16,6 +17,8 @@ const ASSET_PATHS := [
 
 const PlayerScene := preload("res://scenes/actors/player.tscn")
 const MainScene := preload("res://scenes/main.tscn")
+const GreenwoodVillageScene := preload("res://scenes/maps/greenwood_village.tscn")
+const BlackWolfForestScene := preload("res://scenes/maps/black_wolf_forest.tscn")
 const LootDropScene := preload("res://scenes/loot/dropped_item.tscn")
 
 
@@ -30,6 +33,7 @@ func _initialize() -> void:
 			failures.append("%s loaded as %s, not Texture2D" % [asset_path, texture.get_class()])
 
 	await _test_assets_are_visible_in_scenes(failures)
+	_test_v05_maps_have_placeholder_tilesets(failures)
 	_test_dropped_item_scene(failures)
 
 	if failures.is_empty():
@@ -67,6 +71,33 @@ func _test_assets_are_visible_in_scenes(failures: Array[String]) -> void:
 	if not main.has_node("MenuOverlay/EquipmentPanel"):
 		failures.append("MenuOverlay should display an equipment panel")
 	main.free()
+
+
+func _test_v05_maps_have_placeholder_tilesets(failures: Array[String]) -> void:
+	var tile_set := ResourceLoader.load("res://resources/tilesets/environment_placeholder_tileset.tres")
+	if tile_set == null:
+		failures.append("v0.5 should provide an environment placeholder TileSet resource")
+	elif not tile_set is TileSet:
+		failures.append("environment placeholder resource should load as TileSet")
+
+	var village := GreenwoodVillageScene.instantiate()
+	if not village.has_node("PlaceholderTileLayer"):
+		failures.append("Greenwood Village should include PlaceholderTileLayer")
+	else:
+		var village_layer := village.get_node("PlaceholderTileLayer")
+		if village_layer.get("tile_set") == null:
+			failures.append("Greenwood Village PlaceholderTileLayer should reference a TileSet")
+	village.free()
+
+	var forest := BlackWolfForestScene.instantiate()
+	if not forest.has_node("PlaceholderTileLayer"):
+		failures.append("Black Wolf Forest should include PlaceholderTileLayer")
+	else:
+		var forest_layer := forest.get_node("PlaceholderTileLayer")
+		if forest_layer.get("tile_set") == null:
+			failures.append("Black Wolf Forest PlaceholderTileLayer should reference a TileSet")
+	forest.free()
+
 
 func _test_dropped_item_scene(failures: Array[String]) -> void:
 	var dropped_item := LootDropScene.instantiate()

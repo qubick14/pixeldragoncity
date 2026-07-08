@@ -36,6 +36,7 @@
 - `res://assets/items/item_icons_sheet.png`
 - `res://assets/tilesets/environment_tileset_v1.png`
 - `res://assets/ui/ui_atlas.png`
+- `res://assets/portraits/swordsman_portrait_v1.png`
 
 这些资源可用于 v0.2 到 v0.4 的原型占位，但仍需后续裁切和精修。
 
@@ -104,6 +105,8 @@
 - 宽剑形状，避免过大导致地图 sprite 难读。
 
 剑士地图 sprite 和行走动画规格见 `docs/art/swordsman_sprite_animation_spec.md`。
+
+当前 UI 面板使用 `assets/portraits/swordsman_portrait_v1.png` 作为默认剑士单人半身立绘。旧的 `assets/references/character_portrait_direction_v1.png` 继续保留为三职业方向参考，不作为当前剑士 UI 立绘。
 
 ## 场景方向
 

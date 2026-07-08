@@ -8,6 +8,7 @@ var _slots: Array[Control] = []
 
 
 func set_inventory(slots: Array) -> void:
+	_ensure_panel_background()
 	_ensure_slots(slots.size())
 	for index in range(_slots.size()):
 		var slot := _slots[index]
@@ -34,6 +35,7 @@ func get_slot(index: int) -> Control:
 
 
 func _ensure_slots(count: int) -> void:
+	_ensure_panel_background()
 	if slot_grid == null:
 		slot_grid = $SlotGrid
 	while _slots.size() < count:
@@ -41,3 +43,18 @@ func _ensure_slots(count: int) -> void:
 		slot.name = "Slot%d" % _slots.size()
 		slot_grid.add_child(slot)
 		_slots.append(slot)
+
+
+func _ensure_panel_background() -> void:
+	if has_node("PanelBackground"):
+		return
+	var background := ColorRect.new()
+	background.name = "PanelBackground"
+	background.color = Color(0.075, 0.055, 0.04, 0.92)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.offset_left = -16.0
+	background.offset_top = -16.0
+	background.offset_right = 16.0
+	background.offset_bottom = 16.0
+	add_child(background)
+	move_child(background, 0)

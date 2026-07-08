@@ -28,6 +28,7 @@
 | 道具图标 sheet | `prototype` | `res://assets/items/item_icons_sheet.png` | 装备、药水、材料、任务物品图标，透明背景，后续需重排为规则图标 sheet。 |
 | 场景 tileset | `prototype` | `res://assets/tilesets/environment_tileset_v1.png` | 青木村、黑狼林、黑石矿洞方向 tileset，不透明背景，后续需拆成可铺地图块。 |
 | UI atlas | `prototype` | `res://assets/ui/ui_atlas.png` | HUD、背包、装备、对话框等 UI 部件，后续需拆成可复用组件。 |
+| 剑士半身立绘 | `production_candidate` | `res://assets/portraits/swordsman_portrait_v1.png` | 默认剑士主角单人 UI 立绘，透明背景，当前 HUD、装备和对话面板引用。 |
 | 测试地图背景 | `prototype` | `res://assets/backgrounds/test_map_background_v1.png` | 统一测试地图背景，用于替代错位的临时 tileset 拼贴。 |
 
 这些资源已通过 Godot 导入流程生成 `.png.import` 文件，并通过 `ResourceLoader.load()` 验证可以加载为 `Texture2D`。
@@ -36,7 +37,7 @@
 
 - `godot/scenes/actors/player.tscn` 已使用 `res://assets/sprites/swordsman/swordsman_walk_blockout_v1_atlas.png` 根据移动方向和行走帧播放确定性动作基底。
 - `godot/scenes/maps/test_map.tscn` 已使用 `res://assets/backgrounds/test_map_background_v1.png` 作为统一测试地图背景，避免非规则 tileset 裁切错位。
-- `godot/scenes/ui/hud.tscn` 已使用 `res://assets/ui/ui_atlas.png` 作为 HUD 风格底图，并显示 `res://assets/portraits/character_portrait_direction_v1.png` 角色立绘预览。
+- `godot/scenes/ui/hud.tscn` 已使用 `res://assets/ui/ui_atlas.png` 作为 HUD 风格底图，并接入 `res://assets/portraits/swordsman_portrait_v1.png` 角色立绘预览。
 - `godot/scenes/ui/menu_overlay.tscn` 默认隐藏，点击 HUD 的 Bag 或 Equip 按钮后显示背包或装备面板。
 - `godot/scenes/ui/art_preview.tscn` 已展示玩家、怪物、道具、tileset 和 UI atlas 的缩略预览。
 - `godot/scenes/main.tscn` 已实例化 `ArtPreview`，运行主场景时可以在右上角看到资源预览。
@@ -45,6 +46,7 @@
 
 详细记录见 `docs/art/current_asset_audit_2026-07-02.md`。
 GUI 视口截图审计见 `docs/art/gui_visual_audit_2026-07-02.md`。
+剑士完整步行动作帧审计见 `docs/art/swordsman_walk_cycle_audit_2026-07-06.md`。
 
 - `swordsman_walk_blockout_v1_atlas.png` 是规则 `4x9`、`192x192` cell 的动作验证资源，继续作为当前玩家动作验证基底。
 - `swordsman_walk_9dir_v2_atlas.png` 是规则 `4x9`、`192x192` cell 的外观候选，但步态帧变化偏弱，需 GUI 对比后再决定是否替换 blockout。
@@ -56,6 +58,7 @@ GUI 视口截图审计见 `docs/art/gui_visual_audit_2026-07-02.md`。
 | 类型 | 状态 | 文件 | 说明 |
 | --- | --- | --- | --- |
 | 人物立绘方向 | `reference` | `assets/references/character_portrait_direction_v1.png` | 三职业半身像方向参考。 |
+| 剑士半身立绘 | `production_candidate` | `assets/portraits/swordsman_portrait_v1.png` | 默认剑士主角单人 UI 立绘，透明背景；源图为 `assets/portraits/swordsman_portrait_v1_source.png`。 |
 | 场景方向 | `reference` | `assets/references/scene_direction_v1.png` | 青木村、黑狼林、黑石矿洞气氛参考。 |
 | UI 主参考 | `reference` | `assets/references/ui_direction_primary_v1.png` | HUD、背包、装备面板的主视觉参考。 |
 | 装备图标方向 | `reference` | `assets/references/equipment_icon_direction_v1.png` | 装备、药水、材料图标方向参考。 |
@@ -78,6 +81,8 @@ GUI 视口截图审计见 `docs/art/gui_visual_audit_2026-07-02.md`。
 - `assets/sprites/swordsman/swordsman_walk_9dir_v2_source.png`
 - `assets/sprites/swordsman/swordsman_walk_9dir_v2_atlas.png`
 - `assets/sprites/swordsman/swordsman_walk_blockout_v1_atlas.png`
+- `assets/portraits/swordsman_portrait_v1_source.png`
+- `assets/portraits/swordsman_portrait_v1.png`
 - `assets/sprites/monster_sheet_source.png`
 - `assets/sprites/monster_sheet.png`
 - `assets/items/item_icons_sheet_source.png`

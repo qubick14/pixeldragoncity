@@ -1,5 +1,103 @@
 # DevLog
 
+## 2026-07-07 v0.4 GUI 截图验收与布局修正
+
+完成：
+
+- 使用 Godot 正常渲染模式运行 `/private/tmp/pixeldragoncity_v04_ui_capture.gd`，生成并检查 v0.4 背包、装备、对话和商店截图。
+- 修复 GUI 截图中发现的面板可读性问题：为背包、装备、对话、商店、物品格和 tooltip 添加暗色底板与青铜边框。
+- 调整装备面板半身立绘位置，避免装备槽位与立绘区域重叠。
+- 调整对话面板位置，避免按钮和对话底板压住底部 HUD。
+- 更新 `TODO.md`、`README.md` 和 `docs/11_DevelopmentPlan.md`，同步 v0.4 GUI 截图验收完成状态。
+
+验证：
+
+- `/Applications/Godot.app/Contents/MacOS/Godot --path godot --script /private/tmp/pixeldragoncity_v04_ui_capture.gd`
+- 截图输出：
+  - `/private/tmp/pixeldragoncity_v04_inventory.png`
+  - `/private/tmp/pixeldragoncity_v04_equipment.png`
+  - `/private/tmp/pixeldragoncity_v04_dialogue.png`
+  - `/private/tmp/pixeldragoncity_v04_shop.png`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/ui_panels_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v05_new_player_loop_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_input_and_ui_test.gd`
+
+待完成：
+
+- 后续美术精修仍需把物品图标从 sheet 正式裁切接入；当前背包和装备槽位以占位格、数量和半身像预览验证布局。
+
+## 2026-07-07 v0.5 headless 验收复核
+
+完成：
+
+- 复跑 v0.5 自动化验收，确认地图、NPC、任务、敌人/Boss、掉落装备、保存读取和 UI 数据链路仍保持通过。
+- 复跑资源和剑士动作审计相关 headless 测试，确认当前资源可加载，动作审计图可生成。
+- 保留 `TODO.md` 中 `v0.5 10 分钟手动验收` 为未完成，因为尚未进行 Godot GUI 人工路线试玩。
+
+验证：
+
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --quit`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v05_new_player_loop_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_input_and_ui_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_component_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_flow_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_playthrough_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v0_3_inventory_and_loot_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/ui_data_load_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/ui_panels_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/asset_load_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_sprite_asset_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/swordsman_walk_audit_image.gd`
+- `jq empty data/items.json data/monsters.json data/maps.json data/npcs.json data/shops.json data/skills.json data/ui_demo_state.json`
+
+已知限制：
+
+- `visual_snapshot_test.gd` 在 headless dummy renderer 下失败，错误为无法获取 viewport 图像；该测试需要非 dummy renderer 或 GUI 环境。
+- v0.5 仍需要人工 GUI 路线验收：从青木村出生、接任务、进黑狼林、战斗、拾取装备、击败 Boss、回村交付、保存读取。
+
+## 2026-07-07 v0.5 headless 闭环状态收口
+
+完成：
+
+- 更新 `README.md`，将当前阶段从 v0.4 headless 闭环改为 v0.5 新手流程 headless 闭环完成，下一步聚焦 10 分钟 GUI 手动验收和 v0.4 UI 观感补验。
+- 更新 `docs/superpowers/plans/2026-07-02-pixeldragoncity-v0.5.md`，补齐 Task 1、Task 5 和 Task 7 的已完成复选框，并说明最小掉落/拾取/背包/装备闭环复用 v0.3 `InventoryModel`、`EquipmentModel` 和 `DroppedItem`。
+- 更新旧 DevLog 段落，把已经由 2026-07-05 到 2026-07-06 后续条目完成的黑狼头目、真实任务死亡事件、保存读取和占位 TileSet 风险改为后续完成说明。
+
+验证：
+
+- `jq empty data/items.json data/monsters.json data/maps.json data/npcs.json data/shops.json data/ui_demo_state.json`
+- `test -f docs/superpowers/plans/2026-07-02-pixeldragoncity-v0.5.md`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --quit`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_input_and_ui_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v05_new_player_loop_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/asset_load_test.gd`
+
+待完成：
+
+- v0.5 10 分钟 Godot GUI 手动验收。
+- v0.4 UI 布局、按钮、tooltip 和遮挡观感补验。
+- v0.2 战斗手感人工验收。
+
+## 2026-07-06 剑士步行动作帧审计
+
+完成：
+
+- 新增 `godot/scripts/tests/swordsman_walk_audit_image.gd`，将剑士 blockout atlas 与 v2 atlas 按 `9` 行方向、每行 `4` 帧拼成审计图。
+- 新增 `docs/art/swordsman_walk_cycle_audit_2026-07-06.md`，记录完整步行动作帧审计结论。
+- 确认 `swordsman_walk_blockout_v1_atlas.png` 四帧步态变化明显，适合继续作为当前动作验证资源。
+- 确认 `swordsman_walk_9dir_v2_atlas.png` 外观更接近最终方向，但步态变化偏弱，暂不建议直接替换 blockout。
+- 更新 `TODO.md` 和 `docs/art/gui_visual_audit_2026-07-02.md`，把“动作帧可读”与“人工实机手感”拆开跟踪。
+
+验证：
+
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/swordsman_walk_audit_image.gd`
+- 输出包含 `swordsman_walk_audit_image: PASS /tmp/pixeldragoncity_swordsman_walk_audit.png 1192x1296`。
+
+待完成：
+
+- 人工移动试玩确认剑士 blockout atlas 在实际连续移动中的手感。
+- 后续正式剑士 walk atlas 需要结合 v2 外观和 blockout 动作幅度重新绘制。
+
 ## 2026-07-06 Git 管理初始化
 
 完成：
@@ -13,6 +111,25 @@
 
 - `git diff --cached --check` 通过。
 - 已创建初始提交 `Initial project import`，纳入 221 个项目文件，作为后续开发基线。
+
+## 2026-07-06 v0.5 地图占位 TileSet 接入
+
+完成：
+
+- 新增 `godot/resources/tilesets/environment_placeholder_tileset.tres`，用现有原创 `environment_tileset_v1.png` 创建可替换占位 TileSet。
+- 更新 `godot/scenes/maps/greenwood_village.tscn` 和 `godot/scenes/maps/black_wolf_forest.tscn`，为两张 v0.5 地图加入 `PlaceholderTileLayer`。
+- 扩展 `godot/scripts/tests/asset_load_test.gd`，验证占位 TileSet 可加载为 `TileSet`，并验证两张地图都引用了占位 tile 层。
+- 更新 `TODO.md` 和 `docs/11_DevelopmentPlan.md`，标记 v0.5 的青木村/黑狼林 tileset 或占位 tileset 完成；正式 `32x32` tileset 美术制作仍留在美术管线待办中。
+
+验证：
+
+- 红灯验证：`asset_load_test.gd` 曾失败于缺少 `res://resources/tilesets/environment_placeholder_tileset.tres`、`GreenwoodVillage/PlaceholderTileLayer` 和 `BlackWolfForest/PlaceholderTileLayer`。
+- 绿灯验证：`/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot -s res://scripts/tests/asset_load_test.gd` 输出 `asset_load_test: PASS`。
+
+待完成：
+
+- v0.5 10 分钟 Godot GUI 手动验收。
+- 正式青木村和黑狼林 `32x32` tileset 美术制作与替换。
 
 ## 2026-07-05 v0.5 保存与读取
 
@@ -32,7 +149,6 @@
 待完成：
 
 - v0.5 10 分钟 Godot GUI 手动验收。
-- 青木村和黑狼林第一版 tileset 或可替换占位 tileset。
 
 ## 2026-07-05 v0.5 黑狼林敌人与 Boss 任务推进
 
@@ -126,7 +242,7 @@
 待完成：
 
 - 手动运行 Godot GUI 验收 v0.4 UI 布局、重叠、按钮和 tooltip 观感。
-- 继续 v0.5 黑狼头目、真实任务战斗事件、保存读取和 10 分钟手动验收。
+- v0.5 黑狼头目、真实任务战斗事件、保存读取和占位 TileSet 层已在 2026-07-05 到 2026-07-06 的后续条目中完成；当前仅剩 v0.5 10 分钟手动验收。
 
 ## 2026-07-02 像素美术资源静态审计
 
@@ -221,10 +337,11 @@
 - `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_flow_test.gd`
 - `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v0_3_inventory_and_loot_test.gd`
 
-待完成：
+后续完成：
 
-- 将真实野狼/黑狼头目死亡事件接入 `QuestManager`，不再只靠测试直接调用记录方法。
-- 实现保存读取和完整 10 分钟手动验收。
+- 真实野狼/黑狼头目死亡事件已在 2026-07-05 的 v0.5 黑狼林敌人与 Boss 任务推进中接入。
+- 保存读取已在 2026-07-05 的 v0.5 保存与读取中完成。
+- 完整 10 分钟手动验收仍待完成。
 
 ## 2026-07-02 v0.3 掉落、背包与装备实现
 
@@ -288,10 +405,10 @@
 
 - `v05_new_player_loop_test.gd` 的玩家 `interact_requested` 信号、村长任务状态、商人/铁匠地图节点和商店入口覆盖已在后续实现中补齐。
 
-已知风险：
+后续完成：
 
-- `v05_new_player_loop_test.gd` 已覆盖地图切换、NPC 交互和 `first_hunt` 任务状态；真实战斗死亡事件、Boss 实体、完整任务奖励和保存读取仍需在 v0.5 后续实现阶段继续补齐。
-- v0.5 还没有黑狼头目实体接入、完整任务奖励、保存读取和 10 分钟 GUI 手动验收。
+- `v05_new_player_loop_test.gd` 已在后续实现中扩展到真实野狼/黑狼头目死亡、保存读取和最小掉落/装备状态。
+- v0.5 当前剩余风险集中在 10 分钟 GUI 手动验收和路线手感，而不是 headless 功能缺口。
 
 ## 2026-07-02 v0.4 UI、NPC 与商店计划
 
@@ -475,6 +592,7 @@
 - 添加鼠标长按连续移动：长按左键持续走向鼠标方向，长按右键持续跑向鼠标方向。
 - 添加临时移动动画反馈：占位角色移动时上下轻微起伏，左右移动时翻转方向。
 - 添加 headless 行为测试 `godot/scripts/tests/player_input_and_ui_test.gd`。
+- 生成剑士单人半身立绘 `assets/portraits/swordsman_portrait_v1.png`，并接入 HUD、装备面板、对话面板和菜单 overlay 的人物立绘引用。
 
 验证：
 

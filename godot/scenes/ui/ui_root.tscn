@@ -30,9 +30,9 @@ offset_bottom = 526.0
 [node name="DialoguePanel" parent="." instance=ExtResource("5_dialogue")]
 visible = false
 offset_left = 420.0
-offset_top = 610.0
+offset_top = 560.0
 offset_right = 1180.0
-offset_bottom = 830.0
+offset_bottom = 780.0
 
 [node name="ShopPanel" parent="." instance=ExtResource("6_shop")]
 visible = false

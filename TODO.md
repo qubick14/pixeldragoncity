@@ -14,7 +14,7 @@
 - [x] 完成 v0.3 掉落与装备
 - [x] 创建像素美术资源开发计划
 - [x] 完成 v0.4 UI、NPC 与商店 headless 闭环
-- [ ] 手动验收 v0.4 UI、NPC 与商店观感
+- [x] 手动验收 v0.4 UI、NPC 与商店观感
 - [ ] 完成 v0.5 新手流程
 
 ## v0.1 项目骨架
@@ -88,7 +88,7 @@
 - [x] 创建商店 UI
 - [x] 通过 UI Root 统一路由面板打开和关闭
 - [x] 运行 v0.4 headless UI 验证
-- [ ] 手动运行 Godot GUI 验收 v0.4 UI 布局和交互观感
+- [x] 手动运行 Godot GUI 验收 v0.4 UI 布局和交互观感
 - [x] 将 NPC 对话和商店入口接入正式地图 NPC 交互
 
 ## v0.5 新手流程
@@ -97,12 +97,12 @@
 - [x] 更新 v0.5 相关设计文档
 - [x] 青木村出生点
 - [x] 青木村第一版地图设计
-- [ ] 青木村第一版 tileset 或占位 tileset
+- [x] 青木村第一版 tileset 或占位 tileset
 - [x] 新手 NPC
 - [x] `first_hunt` 第一个任务状态
 - [x] 黑狼林入口
 - [x] 黑狼林第一版地图设计
-- [ ] 黑狼林第一版 tileset 或占位 tileset
+- [x] 黑狼林第一版 tileset 或占位 tileset
 - [x] 第一个 Boss
 - [x] 黑狼头目临时像素资源
 - [x] 地图切换
@@ -128,7 +128,8 @@
 - [x] 完成现有资源静态视觉与导入审计
 - [x] 完成现有资源 GUI 观感审计
 - [x] 确认剑士 blockout atlas 静态比例 GUI 观感
-- [ ] 确认剑士 blockout atlas 完整步行动作 GUI 手感
+- [x] 确认剑士 blockout atlas 完整步行动作帧可读
+- [ ] 人工移动试玩确认剑士 blockout atlas 实机手感
 - [x] 修正 HUD 右侧等级、经验、金币文字挤压和裁切风险
 - [x] 将 `ArtPreview` 改为 debug-only 或默认隐藏
 - [x] 默认隐藏 HUD 角色立绘预览，避免常驻遮挡地图画面

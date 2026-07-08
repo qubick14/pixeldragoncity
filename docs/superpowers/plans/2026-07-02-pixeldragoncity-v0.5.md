@@ -161,12 +161,12 @@ Quest states are:
 - Modify: `TODO.md`
 - Modify: `README.md`
 
-- [ ] Step 1: Confirm v0.5 scope in docs.
-- [ ] Step 2: Add the first quest route and route-critical ids.
-- [ ] Step 3: Add map layout notes for Greenwood Village and Black Wolf Forest.
-- [ ] Step 4: Add v0.5 save payload fields and quest states.
-- [ ] Step 5: Run `jq empty data/items.json data/monsters.json data/maps.json`.
-- [ ] Step 6: Run `test -f docs/superpowers/plans/2026-07-02-pixeldragoncity-v0.5.md`.
+- [x] Step 1: Confirm v0.5 scope in docs.
+- [x] Step 2: Add the first quest route and route-critical ids.
+- [x] Step 3: Add map layout notes for Greenwood Village and Black Wolf Forest.
+- [x] Step 4: Add v0.5 save payload fields and quest states.
+- [x] Step 5: Run `jq empty data/items.json data/monsters.json data/maps.json`.
+- [x] Step 6: Run `test -f docs/superpowers/plans/2026-07-02-pixeldragoncity-v0.5.md`.
 
 Expected result: future agents can start v0.5 implementation without relying on chat context.
 
@@ -245,15 +245,17 @@ Expected result: the quest progression does not depend on hidden chat notes or m
 - Modify: `godot/scripts/ui/menu_overlay.gd`
 - Test: `godot/scripts/tests/v05_new_player_loop_test.gd`
 
-- [ ] Step 1: Extend the test to add `wolf_pelt`, `iron_sword`, and `leather_armor`.
-- [ ] Step 2: Assert item quantities stack by `item_id`.
-- [ ] Step 3: Assert equipping `iron_sword` fills `weapon`.
-- [ ] Step 4: Assert equipping `leather_armor` fills `armor`.
-- [ ] Step 5: Implement minimal inventory storage.
-- [ ] Step 6: Implement minimal equipment slots.
-- [ ] Step 7: Add pickup item scene and pickup behavior.
-- [ ] Step 8: Add simple menu overlay text for inventory and equipment state.
-- [ ] Step 9: Run route-state test.
+- [x] Step 1: Extend the test to add `wolf_pelt`, `iron_sword`, and `leather_armor`.
+- [x] Step 2: Assert item quantities stack by `item_id`.
+- [x] Step 3: Assert equipping `iron_sword` fills `weapon`.
+- [x] Step 4: Assert equipping `leather_armor` fills `armor`.
+- [x] Step 5: Implement minimal inventory storage.
+- [x] Step 6: Implement minimal equipment slots.
+- [x] Step 7: Add pickup item scene and pickup behavior.
+- [x] Step 8: Add simple menu overlay text for inventory and equipment state.
+- [x] Step 9: Run route-state test.
+
+Implementation note: this task is satisfied by the v0.3 inventory/equipment/drop stack (`InventoryModel`, `EquipmentModel`, `DroppedItem`) and the v0.5 route test coverage, rather than by adding duplicate `items/drop_item` files.
 
 Expected result: the route supports the GDD requirement that the player can obtain and equip a basic item.
 
@@ -284,7 +286,7 @@ Expected result: saving and loading proves the v0.5 route can be resumed.
 - Modify: `docs/DevLog.md`
 - Modify: `TODO.md`
 
-- [ ] Step 1: Run Godot headless startup.
+- [x] Step 1: Run Godot headless startup.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --quit
@@ -292,7 +294,7 @@ Expected result: saving and loading proves the v0.5 route can be resumed.
 
 Expected: output contains the current prototype startup message and no script errors.
 
-- [ ] Step 2: Run existing v0.1 player test.
+- [x] Step 2: Run existing v0.1 player test.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_input_and_ui_test.gd
@@ -300,7 +302,7 @@ Expected: output contains the current prototype startup message and no script er
 
 Expected: output contains `player_input_and_ui_test: PASS`.
 
-- [ ] Step 3: Run v0.5 route test.
+- [x] Step 3: Run v0.5 route test.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v05_new_player_loop_test.gd
@@ -311,8 +313,8 @@ Expected: output contains `v05_new_player_loop_test: PASS`.
 - [ ] Step 4: Manually run the game and complete the route from new game to quest completion.
 - [ ] Step 5: Save after quest completion, restart, and load.
 - [ ] Step 6: Confirm the loaded state preserves map, position, inventory, equipment, and quest completion.
-- [ ] Step 7: Update `TODO.md` with completed v0.5 items.
-- [ ] Step 8: Update `docs/DevLog.md` with exact verification commands and remaining risks.
+- [x] Step 7: Update `TODO.md` with completed v0.5 items.
+- [x] Step 8: Update `docs/DevLog.md` with exact verification commands and remaining risks.
 
 Expected result: v0.5 is demonstrably playable and reloadable.
 

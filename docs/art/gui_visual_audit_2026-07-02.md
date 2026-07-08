@@ -94,3 +94,11 @@ visual_snapshot_test: PASS /tmp/pixeldragoncity_visual_snapshot.png
 ```text
 visual_snapshot_test: PASS /tmp/pixeldragoncity_visual_snapshot.png
 ```
+
+## 2026-07-06 步行动作补充审计
+
+补充审计见 `docs/art/swordsman_walk_cycle_audit_2026-07-06.md`。
+
+- `swordsman_walk_blockout_v1_atlas.png` 四帧步态变化明显，适合作为当前动作验证资源。
+- `swordsman_walk_9dir_v2_atlas.png` 外观更好，但步态变化偏弱，暂不建议直接替换 blockout。
+- 当前决策：玩家继续使用 blockout atlas；正式剑士 walk atlas 应参考 v2 外观和 blockout 动作幅度重新绘制。

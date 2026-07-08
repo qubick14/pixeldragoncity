@@ -10,12 +10,14 @@ var _finished: bool = false
 
 
 func _ready() -> void:
+	_ensure_panel_background()
 	_ensure_signals()
 	$QuestButton.visible = false
 	visible = false
 
 
 func start_dialogue(npc_data: Dictionary) -> void:
+	_ensure_panel_background()
 	_ensure_signals()
 	visible = true
 	_finished = false
@@ -73,3 +75,18 @@ func _ensure_signals() -> void:
 		$CloseButton.pressed.connect(_close_dialogue)
 	if not $ShopButton.pressed.is_connected(_request_shop):
 		$ShopButton.pressed.connect(_request_shop)
+
+
+func _ensure_panel_background() -> void:
+	if has_node("PanelBackground"):
+		return
+	var background := ColorRect.new()
+	background.name = "PanelBackground"
+	background.color = Color(0.075, 0.055, 0.04, 0.94)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.offset_left = -16.0
+	background.offset_top = -16.0
+	background.offset_right = 16.0
+	background.offset_bottom = 16.0
+	add_child(background)
+	move_child(background, 0)

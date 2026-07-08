@@ -7,10 +7,12 @@ var _slot_nodes: Dictionary = {}
 
 
 func _ready() -> void:
+	_ensure_panel_background()
 	_ensure_slots()
 
 
 func set_equipment(equipment: Dictionary, stats: Dictionary) -> void:
+	_ensure_panel_background()
 	_ensure_slots()
 	for slot_id in EQUIPMENT_SLOTS:
 		var slot := get_equipment_slot(slot_id)
@@ -34,6 +36,7 @@ func set_portrait(texture: Texture2D) -> void:
 
 
 func _ensure_slots() -> void:
+	_ensure_panel_background()
 	var slot_list := get_node_or_null("SlotList") as VBoxContainer
 	if slot_list == null:
 		return
@@ -63,3 +66,18 @@ func _update_stats(stats: Dictionary) -> void:
 		int(stats.get("max_hp", 0)),
 		int(stats.get("max_mp", 0)),
 	]
+
+
+func _ensure_panel_background() -> void:
+	if has_node("PanelBackground"):
+		return
+	var background := ColorRect.new()
+	background.name = "PanelBackground"
+	background.color = Color(0.075, 0.055, 0.04, 0.92)
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.offset_left = -16.0
+	background.offset_top = -16.0
+	background.offset_right = 16.0
+	background.offset_bottom = 16.0
+	add_child(background)
+	move_child(background, 0)
