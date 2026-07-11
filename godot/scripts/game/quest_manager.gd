@@ -10,6 +10,10 @@ func get_quest_state(quest_id: String) -> String:
 	return String(_quest_states.get(quest_id, "not_started"))
 
 
+func get_all_quest_states() -> Dictionary:
+	return _quest_states.duplicate(true)
+
+
 func start_first_hunt() -> void:
 	if get_quest_state("first_hunt") == "not_started":
 		_quest_states["first_hunt"] = "active"

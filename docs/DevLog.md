@@ -1,5 +1,23 @@
 # DevLog
 
+## 2026-07-11 UI 整改：三面板、HUD 两列重排、目标信息与地图切换
+
+完成：
+
+- 新增三个信息面板（代码构建，挂在 `ui_root`）：技能与天赋 `V`、任务 `N`、地图 `M`（示意节点连线图，高亮当前）；三者互斥，`Esc` 全关。背包键改为仅 `B`。
+- 数据：新增 `data/quests.json`；`QuestManager.get_all_quest_states`；`main.gd` 组装技能/任务/地图数据传入面板。
+- HUD 底部中央重排为**左右两列**（左侧 HP/MP 球、右侧背包/装备按钮不动）：左列四行＝角色名+等级+金币 / 技能栏(J K L U) / 快捷物品栏(1-6) / EXP 条；右列＝目标信息（等级+名称、HP、MP、`[E] 对话` 预留交互位）。
+- 中央大格背景贴图换为纯木底板；`QuickSlots` 由 `grow=BOTH` 改为向右生长修正错位。
+- 目标信息：`main._update_target_info` 每帧取最近存活敌人（`data/monsters.json` 取名称/等级），非战斗时隐藏。
+- 地图切换触发：切换点原本只是 Marker2D 无逻辑；新增「靠近按 E 前往<地图>」提示与触发（`main._nearest_transition` 用 maps.json + `To<PascalCase>` 匹配标记），切换后 1.2s 冷却防止落在返回点被弹回。
+- 切磋/盗窃等角色互动记入 TODO（右侧保留交互位，当前仅 E 对话）。
+
+验证：
+
+- 新增 `v09_info_panels_test.gd`（面板生成/互斥/全关、`get_all_quest_states`）、`v10_map_transition_test.gd`（站在切换点按 E 进黑狼林）：`PASS`。
+- `hud_responsive_layout_test` 更新后仍 `PASS`（QuickSlots 保持 6 格且被 CenterRegion 包住）。
+- 全量断言测试 17/17 `PASS`（渲染器专用快照脚本跳过）。
+
 ## 2026-07-11 背包拖放交互、面板可同开、NPC 提示与键位调整
 
 完成：

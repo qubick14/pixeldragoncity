@@ -3,6 +3,7 @@ extends Node2D
 const GameDataScript := preload("res://scripts/data/game_data.gd")
 const InventoryModelScript := preload("res://scripts/inventory/inventory_model.gd")
 const EquipmentModelScript := preload("res://scripts/inventory/equipment_model.gd")
+const JsonDataLoader := preload("res://scripts/data/json_data_loader.gd")
 
 var _game_data: Node = null
 var _inventory: Node = null
@@ -13,6 +14,12 @@ var _base_max_hp: int = 100
 var _skill_bar: Array = []
 var _interact_prompt: Label = null
 const NPC_INTERACT_RANGE := 260.0
+
+var _transition_prompt: Label = null
+var _transition_cooldown: float = 0.0
+var _maps_cache: Array = []
+const TRANSITION_RANGE := 150.0
+const TRANSITION_COOLDOWN := 1.2
 
 const ItemIconsSheet := preload("res://assets/items/item_icons_sheet.png")
 const QUICK_SLOT_COUNT := 6
@@ -49,6 +56,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		_refresh_ui()
 		ui.toggle_equipment()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("open_skills"):
+		ui.set_skills(_game_data.get_skills_for_class("swordsman") if _game_data != null else [])
+		ui.toggle_skills()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("open_quests"):
+		ui.set_quests(_build_quest_list())
+		ui.toggle_quests()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("open_map"):
+		var map_manager := get_node_or_null("MapManager")
+		var current_id: String = map_manager.current_map_id if map_manager != null else ""
+		ui.set_map(_load_json_array("res://../data/maps.json"), current_id)
+		ui.toggle_map()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		if is_carrying():
 			cancel_carry()
@@ -65,6 +86,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_update_cursor_visuals(delta)
+	_update_target_info()
+	if _transition_cooldown > 0.0:
+		_transition_cooldown -= delta
+	_update_transition_prompt()
 	var player := get_node_or_null("Player")
 	var hud := get_node_or_null("HUD")
 	if player == null or hud == null or _skill_bar.is_empty():
@@ -182,6 +207,14 @@ func _on_player_interact_requested() -> void:
 	if map_manager == null:
 		return
 
+	# A nearby map transition takes priority over NPC dialogue.
+	var player_node := get_node_or_null("Player") as Node2D
+	if player_node != null and _transition_cooldown <= 0.0:
+		var transition := _nearest_transition(player_node)
+		if not transition.is_empty() and float(transition.get("distance", INF)) <= TRANSITION_RANGE:
+			map_manager.load_map(String(transition.get("target_map_id", "")), String(transition.get("target_spawn_id", "")))
+			return
+
 	var current_map: Node = map_manager.get_current_map()
 	if current_map == null or not current_map.has_node("Npcs"):
 		return
@@ -219,6 +252,8 @@ func _show_npc_dialogue(npc: Node) -> void:
 
 func _on_map_loaded(_map_id: String, map_node: Node) -> void:
 	_connect_enemy_deaths(map_node)
+	# Block transition re-trigger briefly so spawning next to a return point can't bounce.
+	_transition_cooldown = TRANSITION_COOLDOWN
 
 
 func _connect_enemy_deaths(map_node: Node) -> void:
@@ -342,6 +377,175 @@ func collect_drop(dropped: Node) -> bool:
 	if collected:
 		_refresh_ui()
 	return collected
+
+
+# --- Map transitions (walk to the edge, press E) -----------------------------
+func _get_maps() -> Array:
+	if _maps_cache.is_empty():
+		_maps_cache = _load_json_array("res://../data/maps.json")
+	return _maps_cache
+
+
+func _map_display_name(map_id: String) -> String:
+	for map in _get_maps():
+		if map is Dictionary and String(map.get("id", "")) == map_id:
+			return String(map.get("name", map_id))
+	return map_id
+
+
+func _to_pascal(snake: String) -> String:
+	var out := ""
+	for part in snake.split("_", false):
+		if not part.is_empty():
+			out += part.substr(0, 1).to_upper() + part.substr(1)
+	return out
+
+
+func _nearest_transition(player: Node2D) -> Dictionary:
+	var map_manager := get_node_or_null("MapManager")
+	if map_manager == null:
+		return {}
+	var current_map: Node = map_manager.get_current_map()
+	if current_map == null or not current_map.has_node("TransitionPoints"):
+		return {}
+
+	var transitions: Array = []
+	for map in _get_maps():
+		if map is Dictionary and String(map.get("id", "")) == map_manager.current_map_id:
+			transitions = map.get("transitions", [])
+			break
+
+	var best: Dictionary = {}
+	var best_distance := INF
+	for transition in transitions:
+		if not transition is Dictionary:
+			continue
+		var target_id := String(transition.get("target_map_id", ""))
+		var marker := current_map.get_node_or_null("TransitionPoints/To%s" % _to_pascal(target_id)) as Node2D
+		if marker == null:
+			continue
+		var distance: float = player.global_position.distance_to(marker.global_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = {
+				"marker": marker,
+				"target_map_id": target_id,
+				"target_spawn_id": String(transition.get("target_spawn_id", "")),
+				"name": _map_display_name(target_id),
+				"distance": distance,
+			}
+	return best
+
+
+func _update_transition_prompt() -> void:
+	var player := get_node_or_null("Player") as Node2D
+	if player == null or _transition_cooldown > 0.0:
+		_hide_transition_prompt()
+		return
+	var transition := _nearest_transition(player)
+	if transition.is_empty() or float(transition.get("distance", INF)) > TRANSITION_RANGE:
+		_hide_transition_prompt()
+		return
+	var marker: Node2D = transition.get("marker")
+	_ensure_transition_prompt(marker.get_parent())
+	_transition_prompt.text = "按 E 前往%s" % String(transition.get("name", ""))
+	_transition_prompt.global_position = marker.global_position + Vector2(-60, -40)
+	_transition_prompt.visible = true
+
+
+func _ensure_transition_prompt(parent: Node) -> void:
+	if _transition_prompt != null and is_instance_valid(_transition_prompt):
+		if _transition_prompt.get_parent() != parent:
+			_transition_prompt.get_parent().remove_child(_transition_prompt)
+			parent.add_child(_transition_prompt)
+		return
+	_transition_prompt = Label.new()
+	_transition_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_transition_prompt.custom_minimum_size = Vector2(120, 0)
+	_transition_prompt.z_index = 50
+	_transition_prompt.add_theme_color_override("font_color", Color(0.7, 0.95, 1))
+	_transition_prompt.add_theme_font_size_override("font_size", 14)
+	parent.add_child(_transition_prompt)
+
+
+func _hide_transition_prompt() -> void:
+	if _transition_prompt != null and is_instance_valid(_transition_prompt):
+		_transition_prompt.visible = false
+
+
+# --- Bottom-center target info -----------------------------------------------
+var _monster_names: Dictionary = {}
+const TARGET_INFO_RANGE := 520.0
+
+
+func _update_target_info() -> void:
+	var hud := get_node_or_null("HUD")
+	if hud == null or not hud.has_method("set_target"):
+		return
+	var map_manager := get_node_or_null("MapManager")
+	var player := get_node_or_null("Player") as Node2D
+	if map_manager == null or player == null:
+		hud.clear_target()
+		return
+	var current_map: Node = map_manager.get_current_map()
+	if current_map == null or not current_map.has_node("Enemies"):
+		hud.clear_target()
+		return
+
+	var nearest: Node = null
+	var nearest_hc: Node = null
+	var nearest_distance := INF
+	for enemy in current_map.get_node("Enemies").get_children():
+		if not enemy is Node2D:
+			continue
+		var hc := enemy.get_node_or_null("HealthComponent")
+		if hc == null or int(hc.current_hp) <= 0:
+			continue
+		var distance: float = player.global_position.distance_to(enemy.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = enemy
+			nearest_hc = hc
+
+	if nearest == null or nearest_distance > TARGET_INFO_RANGE:
+		hud.clear_target()
+		return
+	var monster_id := String(nearest.get("monster_id"))
+	var info := _monster_info(monster_id)
+	# Monsters have no mana; the MP bar reads 0/0 for now.
+	hud.set_target(String(info.get("name", monster_id)), int(info.get("level", 0)), int(nearest_hc.current_hp), int(nearest_hc.max_hp), 0, 0)
+
+
+func _monster_info(monster_id: String) -> Dictionary:
+	if _monster_names.is_empty():
+		for monster in _load_json_array("res://../data/monsters.json"):
+			if monster is Dictionary:
+				_monster_names[String(monster.get("id", ""))] = {
+					"name": String(monster.get("name", monster.get("id", ""))),
+					"level": int(monster.get("level", 0)),
+				}
+	return _monster_names.get(monster_id, {"name": monster_id, "level": 0})
+
+
+# --- Info panel data assembly (skills / quests / map) ------------------------
+func _load_json_array(path: String) -> Array:
+	var loader := JsonDataLoader.new()
+	var data: Variant = loader.load_json(path)
+	return data if data is Array else []
+
+
+func _build_quest_list() -> Array:
+	var quest_meta := _load_json_array("res://../data/quests.json")
+	var quest_manager := get_node_or_null("QuestManager")
+	var states: Dictionary = quest_manager.get_all_quest_states() if quest_manager != null else {}
+	var result: Array = []
+	for quest in quest_meta:
+		if not quest is Dictionary:
+			continue
+		var entry: Dictionary = quest.duplicate(true)
+		entry["state"] = String(states.get(String(quest.get("id", "")), "not_started"))
+		result.append(entry)
+	return result
 
 
 # --- Cursor-carry item interaction -------------------------------------------
