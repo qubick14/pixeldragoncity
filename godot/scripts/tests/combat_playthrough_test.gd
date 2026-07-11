@@ -24,7 +24,8 @@ func _test_main_scene_combat_playthrough(failures: Array[String]) -> void:
 
 	var player := main.get_node_or_null("Player")
 	var wolf := main.get_node_or_null("WildWolf")
-	var hp_value := main.get_node_or_null("HUD/BottomPanel/LeftFrame/HpValue") as Label
+	var hud := main.get_node_or_null("HUD")
+	var hp_value := hud.find_child("HpValue", true, false) as Label if hud != null else null
 
 	if wolf == null:
 		wolf = WolfScene.instantiate()

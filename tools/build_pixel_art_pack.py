@@ -1,0 +1,850 @@
+#!/usr/bin/env python3
+"""Generate a cohesive pixel-art asset pack for Pixel Dragon City.
+
+All art shares one limited palette so backgrounds, characters, monsters and
+items read as one world. Everything is drawn at 1x pixel scale (nearest-neighbor
+upscaling happens in Godot), so shapes stay crisp.
+
+Outputs (PNG, RGBA) into godot/assets/... :
+  backgrounds/greenwood_village_bg.png
+  backgrounds/black_wolf_forest_bg.png
+  sprites/swordsman/swordsman_pixel_atlas.png   (4 cols x 9 rows)
+  sprites/wolf_pixel_atlas.png                   (4 cols x 9 rows)
+  items/item_icons_pixel_sheet.png              (32px grid)
+
+Run:  python3 tools/build_pixel_art_pack.py
+"""
+from __future__ import annotations
+
+import math
+import os
+import random
+from PIL import Image, ImageDraw
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GODOT_ASSETS = os.path.join(ROOT, "godot", "assets")
+
+# --------------------------------------------------------------------------
+# Shared palette (R, G, B). Cozy 16-bit RPG feel: warm greens, earthy browns.
+# --------------------------------------------------------------------------
+PAL = {
+    # grass / foliage
+    "grass_dk": (58, 104, 61),
+    "grass":    (86, 140, 74),
+    "grass_lt": (120, 174, 90),
+    "grass_hi": (156, 200, 110),
+    # forest floor (darker, mossier)
+    "moss_dk":  (40, 74, 52),
+    "moss":     (58, 96, 62),
+    "moss_lt":  (82, 120, 74),
+    # dirt / path
+    "dirt_dk":  (104, 78, 50),
+    "dirt":     (140, 106, 66),
+    "dirt_lt":  (170, 134, 88),
+    "dirt_hi":  (196, 162, 112),
+    # wood / structures
+    "wood_dk":  (92, 62, 40),
+    "wood":     (132, 92, 56),
+    "wood_lt":  (170, 124, 78),
+    "roof":     (150, 66, 54),
+    "roof_dk":  (110, 46, 42),
+    "roof_lt":  (186, 96, 78),
+    "thatch":   (176, 146, 78),
+    # tree
+    "bark_dk":  (74, 52, 36),
+    "bark":     (104, 74, 48),
+    "leaf_dk":  (44, 92, 54),
+    "leaf":     (66, 124, 64),
+    "leaf_lt":  (98, 158, 82),
+    "leaf_hi":  (134, 188, 104),
+    # character skin / cloth / metal
+    "skin_dk":  (176, 122, 84),
+    "skin":     (222, 168, 122),
+    "skin_hi":  (244, 200, 158),
+    "hair_dk":  (70, 46, 32),
+    "hair":     (104, 70, 42),
+    "tunic_dk": (48, 92, 128),
+    "tunic":    (72, 128, 172),
+    "tunic_hi": (108, 168, 208),
+    "leather_dk": (96, 62, 40),
+    "leather":  (138, 92, 54),
+    "steel_dk": (96, 104, 120),
+    "steel":    (150, 158, 172),
+    "steel_hi": (206, 212, 222),
+    "gold":     (214, 176, 74),
+    "gold_hi":  (244, 214, 120),
+    # wolf
+    "fur_dk":   (54, 54, 62),
+    "fur":      (84, 84, 96),
+    "fur_lt":   (120, 120, 134),
+    "fur_boss_dk": (34, 32, 40),
+    "fur_boss": (58, 56, 68),
+    "fur_boss_lt": (92, 90, 104),
+    "eye_red":  (206, 72, 60),
+    "fang":     (232, 230, 222),
+    # misc
+    "shadow":   (0, 0, 0, 70),
+    "outline":  (34, 30, 34),
+    "potion_r": (208, 68, 74),
+    "potion_g": (86, 176, 96),
+    "flower_r": (206, 92, 96),
+    "flower_y": (226, 200, 96),
+    "flower_p": (170, 116, 190),
+    "water_dk": (52, 96, 132),
+    "water":    (84, 138, 176),
+    "water_hi": (132, 182, 208),
+    "rock_dk":  (90, 94, 100),
+    "rock":     (128, 132, 138),
+    "rock_hi":  (168, 172, 178),
+}
+
+
+def c(name):
+    v = PAL[name]
+    return v if len(v) == 4 else (v[0], v[1], v[2], 255)
+
+
+def new_img(w, h):
+    return Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+
+def save(img, *parts):
+    path = os.path.join(GODOT_ASSETS, *parts)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    print("wrote", os.path.relpath(path, ROOT), img.size)
+    return path
+
+
+# --------------------------------------------------------------------------
+# Ground texture helpers
+# --------------------------------------------------------------------------
+def fill_ground(draw, w, h, base, speckles, rng, density=0.10, blade=None):
+    """Flat base colour with blocky 2x2 dither patches + grass tufts.
+
+    Blocky patches (instead of per-pixel static) read as intentional pixel art.
+    `blade`, if given, is a colour used to stipple short vertical grass tufts.
+    """
+    draw.rectangle([0, 0, w, h], fill=base)
+    # 2x2 dither patches
+    for by in range(0, h, 2):
+        for bx in range(0, w, 2):
+            if rng.random() < density:
+                col = rng.choice(speckles)
+                draw.rectangle([bx, by, bx + 1, by + 1], fill=col)
+    # scattered grass tufts (three-pixel little blades)
+    if blade is not None:
+        for _ in range(int(w * h * 0.0016)):
+            x = rng.randint(2, w - 3)
+            y = rng.randint(2, h - 3)
+            draw.point((x, y), fill=blade)
+            draw.point((x, y - 1), fill=blade)
+            draw.point((x - 1, y), fill=blade)
+            draw.point((x + 1, y - 1), fill=blade)
+
+
+def draw_path(draw, points, half_width, base, edge, spec, rng):
+    """Draw a soft dirt path along a polyline (list of (x,y))."""
+    # thick line segments
+    for i in range(len(points) - 1):
+        x0, y0 = points[i]
+        x1, y1 = points[i + 1]
+        steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
+        for s in range(steps + 1):
+            t = s / steps
+            cx = x0 + (x1 - x0) * t
+            cy = y0 + (y1 - y0) * t
+            r = half_width + rng.randint(-2, 2)
+            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=base)
+    # speckle + edge highlight pass over the painted area is approximated by
+    # scattering lighter/darker pebbles near the centre line
+    for i in range(len(points) - 1):
+        x0, y0 = points[i]
+        x1, y1 = points[i + 1]
+        steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
+        for s in range(0, steps + 1, 2):
+            t = s / steps
+            cx = int(x0 + (x1 - x0) * t)
+            cy = int(y0 + (y1 - y0) * t)
+            for _ in range(int(half_width * 0.9)):
+                px = cx + rng.randint(-half_width, half_width)
+                py = cy + rng.randint(-half_width, half_width)
+                if (px - cx) ** 2 + (py - cy) ** 2 <= (half_width - 1) ** 2:
+                    draw.point((px, py), fill=rng.choice(spec))
+
+
+def stamp_tree(img, cx, cy, scale=1, boss=False):
+    """Stamp a chunky pixel tree centred on trunk base at (cx, cy)."""
+    d = ImageDraw.Draw(img)
+    s = scale
+    # shadow
+    d.ellipse([cx - 14 * s, cy - 4 * s, cx + 14 * s, cy + 5 * s], fill=c("shadow"))
+    # trunk
+    d.rectangle([cx - 4 * s, cy - 18 * s, cx + 4 * s, cy], fill=c("bark"))
+    d.rectangle([cx - 4 * s, cy - 18 * s, cx - 1 * s, cy], fill=c("bark_dk"))
+    # canopy: three overlapping blobs
+    leaf_dk = c("leaf_dk")
+    leaf = c("leaf")
+    leaf_lt = c("leaf_lt")
+    leaf_hi = c("leaf_hi")
+    blobs = [(-12, -30, 16), (10, -30, 16), (-1, -44, 20), (-1, -26, 20)]
+    for bx, by, br in blobs:
+        d.ellipse([cx + bx * s - br * s, cy + by * s - br * s,
+                   cx + bx * s + br * s, cy + by * s + br * s], fill=leaf_dk)
+    for bx, by, br in blobs:
+        rr = (br - 3)
+        d.ellipse([cx + bx * s - rr * s, cy + by * s - rr * s,
+                   cx + bx * s + rr * s, cy + by * s + rr * s], fill=leaf)
+    # highlights (upper-left)
+    for bx, by, br in blobs:
+        rr = (br - 7)
+        d.ellipse([cx + bx * s - rr * s - 3 * s, cy + by * s - rr * s - 3 * s,
+                   cx + bx * s + rr * s - 3 * s, cy + by * s + rr * s - 3 * s], fill=leaf_lt)
+    # sparkle dabs
+    rng = random.Random(int(cx * 13 + cy * 7))
+    for _ in range(18 * s):
+        bx, by, br = rng.choice(blobs)
+        px = cx + int((bx + rng.randint(-br + 4, br - 8)) * s)
+        py = cy + int((by + rng.randint(-br + 4, br - 8)) * s)
+        d.point((px, py), fill=leaf_hi)
+
+
+def stamp_hut(img, cx, cy, roof_color, roof_dk, roof_lt):
+    d = ImageDraw.Draw(img)
+    # shadow
+    d.ellipse([cx - 44, cy + 22, cx + 44, cy + 38], fill=c("shadow"))
+    # walls
+    d.rectangle([cx - 36, cy - 6, cx + 36, cy + 30], fill=c("wood"))
+    d.rectangle([cx - 36, cy - 6, cx + 36, cy + 2], fill=c("wood_lt"))
+    # plank lines
+    for px in range(cx - 30, cx + 36, 12):
+        d.line([px, cy - 6, px, cy + 30], fill=c("wood_dk"))
+    # door
+    d.rectangle([cx - 8, cy + 8, cx + 8, cy + 30], fill=c("wood_dk"))
+    d.rectangle([cx - 6, cy + 10, cx + 6, cy + 30], fill=c("bark_dk"))
+    # window
+    d.rectangle([cx + 16, cy + 6, cx + 28, cy + 16], fill=c("bark_dk"))
+    d.rectangle([cx + 18, cy + 8, cx + 26, cy + 14], fill=(120, 150, 120, 255))
+    # roof (triangle)
+    d.polygon([(cx - 46, cy - 4), (cx, cy - 40), (cx + 46, cy - 4)], fill=roof_color)
+    d.polygon([(cx - 46, cy - 4), (cx, cy - 40), (cx - 4, cy - 4)], fill=roof_dk)
+    d.polygon([(cx + 4, cy - 34), (cx, cy - 40), (cx + 8, cy - 30)], fill=roof_lt)
+    # roof ridge shading lines
+    for i in range(1, 6):
+        d.line([cx - 46 + i * 3, cy - 4, cx, cy - 40], fill=roof_dk)
+
+
+def scatter_flowers(img, w, h, avoid, rng, n=90):
+    d = ImageDraw.Draw(img)
+    cols = [c("flower_r"), c("flower_y"), c("flower_p")]
+    for _ in range(n):
+        x = rng.randint(6, w - 6)
+        y = rng.randint(6, h - 6)
+        if avoid(x, y):
+            continue
+        col = rng.choice(cols)
+        d.point((x, y), fill=col)
+        d.point((x + 1, y), fill=col)
+        d.point((x, y + 1), fill=c("grass_hi"))
+
+
+def scatter_rocks(img, w, h, avoid, rng, n=30):
+    d = ImageDraw.Draw(img)
+    for _ in range(n):
+        x = rng.randint(8, w - 8)
+        y = rng.randint(8, h - 8)
+        if avoid(x, y):
+            continue
+        r = rng.randint(2, 4)
+        d.ellipse([x - r, y - r, x + r, y + r], fill=c("rock"))
+        d.ellipse([x - r, y - r, x + r - 1, y + r - 1], fill=c("rock_hi"))
+        d.point((x + r - 1, y + r - 1), fill=c("rock_dk"))
+
+
+# --------------------------------------------------------------------------
+# Backgrounds
+# --------------------------------------------------------------------------
+def build_greenwood_village():
+    # Village map bounds ~1500x900 centred at origin. Render 1600x960, origin at centre.
+    W, H = 1600, 960
+    img = new_img(W, H)
+    d = ImageDraw.Draw(img)
+    rng = random.Random(20260710)
+    fill_ground(d, W, H, c("grass"),
+                [c("grass_dk"), c("grass_lt")], rng, density=0.10, blade=c("grass_hi"))
+
+    # winding dirt path (local coords -> image coords: +W/2, +H/2)
+    def L(x, y):
+        return (x + W // 2, y + H // 2)
+    path = [L(-620, 190), L(-380, 150), L(-120, 60), L(120, 40), L(360, 10), L(560, 20)]
+    draw_path(d, path, 34, c("dirt"),
+              c("dirt_lt"), [c("dirt_dk"), c("dirt_lt"), c("dirt_hi")], rng)
+
+    def near_path(x, y):
+        # cheap avoidance: within band of the path
+        for (px, py) in path:
+            if (x - px) ** 2 + (y - py) ** 2 < 46 ** 2:
+                return True
+        return False
+
+    scatter_flowers(img, W, H, near_path, rng, n=120)
+    scatter_rocks(img, W, H, near_path, rng, n=26)
+
+    # huts (village) - positions echo original scene (chief hut area)
+    stamp_hut(img, *L(-120, -150), c("roof"), c("roof_dk"), c("roof_lt"))
+    stamp_hut(img, *L(120, -60), c("thatch"), c("wood_dk"), c("dirt_hi"))
+    stamp_hut(img, *L(300, -180), c("roof"), c("roof_dk"), c("roof_lt"))
+
+    # border trees (frame the play area)
+    tx, ty = W // 2, H // 2
+    tree_spots = []
+    for x in range(-720, 760, 120):
+        tree_spots.append((x, -400 + rng.randint(-16, 16)))
+        tree_spots.append((x, 400 + rng.randint(-16, 16)))
+    for y in range(-330, 360, 130):
+        tree_spots.append((-700 + rng.randint(-16, 16), y))
+        tree_spots.append((700 + rng.randint(-16, 16), y))
+    # a few interior trees
+    tree_spots += [(-420, -240), (420, 220), (-500, 250), (480, -300)]
+    for (x, y) in tree_spots:
+        stamp_tree(img, tx + x, ty + y, scale=1)
+
+    return save(img, "backgrounds", "greenwood_village_bg.png")
+
+
+def build_black_wolf_forest():
+    W, H = 1760, 1040
+    img = new_img(W, H)
+    d = ImageDraw.Draw(img)
+    rng = random.Random(66613)
+    fill_ground(d, W, H, c("moss"),
+                [c("moss_dk"), c("grass_dk")], rng, density=0.12, blade=c("moss_lt"))
+
+    def L(x, y):
+        return (x + W // 2, y + H // 2)
+
+    # boss clearing: lighter patch upper-right
+    d.ellipse([L(320, -320)[0], L(320, -320)[1], L(760, 60)[0], L(760, 60)[1]],
+              fill=c("moss_lt"))
+
+    trail = [L(-740, 220), L(-430, 130), L(-120, 60), L(220, -40), L(520, -140), L(700, -120)]
+    draw_path(d, trail, 30, c("dirt_dk"),
+              c("dirt"), [c("dirt_dk"), c("dirt"), c("dirt_lt")], rng)
+
+    def near_trail(x, y):
+        for (px, py) in trail:
+            if (x - px) ** 2 + (y - py) ** 2 < 42 ** 2:
+                return True
+        return False
+
+    scatter_rocks(img, W, H, near_trail, rng, n=44)
+    # dark mushrooms / underbrush dabs
+    for _ in range(140):
+        x = rng.randint(6, W - 6); y = rng.randint(6, H - 6)
+        if near_trail(x, y):
+            continue
+        d.point((x, y), fill=c("moss_dk"))
+        d.point((x, y - 1), fill=c("eye_red") if rng.random() < 0.06 else c("moss_dk"))
+
+    tx, ty = W // 2, H // 2
+    # dense border + scattered interior trees (darker forest)
+    spots = []
+    for x in range(-800, 840, 96):
+        spots.append((x, -450 + rng.randint(-20, 20)))
+        spots.append((x, 450 + rng.randint(-20, 20)))
+    for y in range(-380, 400, 104):
+        spots.append((-780 + rng.randint(-20, 20), y))
+        spots.append((780 + rng.randint(-20, 20), y))
+    for _ in range(26):
+        x = rng.randint(-680, 680); y = rng.randint(-360, 360)
+        if not near_trail(tx + x, ty + y):
+            spots.append((x, y))
+    for (x, y) in spots:
+        stamp_tree(img, tx + x, ty + y, scale=1, boss=True)
+
+    return save(img, "backgrounds", "black_wolf_forest_bg.png")
+
+
+# --------------------------------------------------------------------------
+# Character: swordsman walk atlas (4 cols x 9 rows), 32x40 cells.
+# Rows map to player_controller.get_test_atlas_row():
+#   0 down, 1 down_left, 2 left, 3 up_left, 4 up, 5 up_right, 6 right,
+#   7 down_right, 8 idle(=down). No horizontal flip is applied by the game,
+#   so left and right are drawn separately.
+# --------------------------------------------------------------------------
+CELL_W, CELL_H = 32, 40
+
+
+def _leg_phase(frame):
+    """Return (left_dy, right_dy, swing) for a 4-frame contact/passing walk."""
+    # frame 0 contact(left fwd), 1 passing, 2 contact(right fwd), 3 passing
+    table = {0: (2, -1, 3), 1: (0, 0, 0), 2: (-1, 2, -3), 3: (0, 0, 0)}
+    return table[frame]
+
+
+def _body_bob(frame):
+    return {0: 0, 1: -1, 2: 0, 3: -1}[frame]
+
+
+def draw_hero_front(d, ox, oy, frame, back=False, with_sword=True):
+    bob = _body_bob(frame)
+    ldy, rdy, _ = _leg_phase(frame)
+    cx = ox + 16
+    # shadow
+    d.ellipse([ox + 8, oy + 33, ox + 24, oy + 38], fill=c("shadow"))
+    # legs (pants + boots)
+    d.rectangle([cx - 5, oy + 27 + bob, cx - 2, oy + 33 + ldy], fill=c("leather"))
+    d.rectangle([cx + 1, oy + 27 + bob, cx + 4, oy + 33 + rdy], fill=c("leather_dk"))
+    d.rectangle([cx - 5, oy + 32 + ldy, cx - 2, oy + 34 + ldy], fill=c("outline"))
+    d.rectangle([cx + 1, oy + 32 + rdy, cx + 4, oy + 34 + rdy], fill=c("outline"))
+    # torso (tunic)
+    d.rectangle([cx - 5, oy + 16 + bob, cx + 4, oy + 27 + bob], fill=c("tunic"))
+    d.rectangle([cx - 5, oy + 16 + bob, cx - 3, oy + 27 + bob], fill=c("tunic_dk"))
+    d.rectangle([cx + 2, oy + 16 + bob, cx + 4, oy + 27 + bob], fill=c("tunic_hi"))
+    # belt
+    d.rectangle([cx - 5, oy + 25 + bob, cx + 4, oy + 26 + bob], fill=c("leather_dk"))
+    d.point((cx, oy + 25 + bob), fill=c("gold"))
+    # arms
+    d.rectangle([cx - 7, oy + 17 + bob, cx - 5, oy + 24 + bob], fill=c("skin_dk"))
+    d.rectangle([cx + 4, oy + 17 + bob, cx + 6, oy + 24 + bob], fill=c("skin"))
+    # head
+    d.rectangle([cx - 4, oy + 8 + bob, cx + 3, oy + 16 + bob], fill=c("skin"))
+    d.rectangle([cx + 2, oy + 8 + bob, cx + 3, oy + 16 + bob], fill=c("skin_dk"))
+    d.rectangle([cx - 4, oy + 8 + bob, cx - 3, oy + 12 + bob], fill=c("skin_hi"))
+    # hair
+    d.rectangle([cx - 5, oy + 5 + bob, cx + 4, oy + 9 + bob], fill=c("hair"))
+    d.rectangle([cx - 5, oy + 5 + bob, cx + 4, oy + 6 + bob], fill=c("hair_dk"))
+    if not back:
+        # face: side fringe + two eyes
+        d.rectangle([cx - 5, oy + 8 + bob, cx - 4, oy + 11 + bob], fill=c("hair"))
+        d.rectangle([cx + 3, oy + 8 + bob, cx + 4, oy + 11 + bob], fill=c("hair"))
+        d.point((cx - 2, oy + 12 + bob), fill=c("outline"))
+        d.point((cx + 1, oy + 12 + bob), fill=c("outline"))
+    else:
+        # back of head: full hair
+        d.rectangle([cx - 4, oy + 8 + bob, cx + 3, oy + 15 + bob], fill=c("hair"))
+        d.rectangle([cx - 4, oy + 8 + bob, cx - 2, oy + 15 + bob], fill=c("hair_dk"))
+    # sword on right side (blade down)
+    if with_sword:
+        sx = cx + 6
+        d.rectangle([sx, oy + 22 + bob, sx + 1, oy + 24 + bob], fill=c("leather_dk"))  # grip
+        d.rectangle([sx - 1, oy + 24 + bob, sx + 2, oy + 25 + bob], fill=c("gold"))    # guard
+        d.rectangle([sx, oy + 25 + bob, sx + 1, oy + 34 + bob], fill=c("steel"))       # blade
+        d.point((sx, oy + 25 + bob), fill=c("steel_hi"))
+
+
+def draw_hero_side(d, ox, oy, frame, facing_left, with_sword=True):
+    """Side profile. Draw facing-right internally, mirror if facing_left."""
+    cell = new_img(CELL_W, CELL_H)
+    dd = ImageDraw.Draw(cell)
+    bob = _body_bob(frame)
+    ldy, rdy, swing = _leg_phase(frame)
+    cx = 15
+    dd.ellipse([8, 33, 24, 38], fill=c("shadow"))
+    # legs swing front/back
+    dd.rectangle([cx - 3 + swing, 27 + bob, cx, 34], fill=c("leather"))
+    dd.rectangle([cx - 1 - swing, 27 + bob, cx + 2 - swing, 34], fill=c("leather_dk"))
+    dd.rectangle([cx - 3 + swing, 33, cx, 34], fill=c("outline"))
+    dd.rectangle([cx - 1 - swing, 33, cx + 2 - swing, 34], fill=c("outline"))
+    # torso
+    dd.rectangle([cx - 3, 16 + bob, cx + 2, 27 + bob], fill=c("tunic"))
+    dd.rectangle([cx + 1, 16 + bob, cx + 2, 27 + bob], fill=c("tunic_hi"))
+    dd.rectangle([cx - 3, 16 + bob, cx - 2, 27 + bob], fill=c("tunic_dk"))
+    dd.rectangle([cx - 3, 25 + bob, cx + 2, 26 + bob], fill=c("leather_dk"))
+    # head (face pointing right)
+    dd.rectangle([cx - 2, 8 + bob, cx + 4, 16 + bob], fill=c("skin"))
+    dd.rectangle([cx + 3, 8 + bob, cx + 4, 16 + bob], fill=c("skin_hi"))
+    dd.point((cx + 3, 12 + bob), fill=c("outline"))  # eye
+    # hair (back of head, left side)
+    dd.rectangle([cx - 3, 5 + bob, cx + 3, 9 + bob], fill=c("hair"))
+    dd.rectangle([cx - 3, 5 + bob, cx + 1, 7 + bob], fill=c("hair_dk"))
+    dd.rectangle([cx - 3, 8 + bob, cx - 1, 13 + bob], fill=c("hair"))
+    # forward arm + sword extended forward (right)
+    if with_sword:
+        dd.rectangle([cx + 2, 18 + bob, cx + 6, 20 + bob], fill=c("skin"))
+        dd.rectangle([cx + 6, 17 + bob, cx + 7, 20 + bob], fill=c("gold"))     # guard
+        dd.rectangle([cx + 7, 18 + bob, cx + 15, 19 + bob], fill=c("steel"))  # blade forward
+        dd.point((cx + 14, 18 + bob), fill=c("steel_hi"))
+    if facing_left:
+        cell = cell.transpose(Image.FLIP_LEFT_RIGHT)
+    return cell
+
+
+def build_swordsman_atlas():
+    cols, rows = 4, 9
+    atlas = new_img(CELL_W * cols, CELL_H * rows)
+    d = ImageDraw.Draw(atlas)
+    # row -> ('front'|'back'|'left'|'right')
+    row_kind = ["front", "left", "left", "back", "back", "back", "right", "right", "front"]
+    for r, kind in enumerate(row_kind):
+        for f in range(cols):
+            ox, oy = f * CELL_W, r * CELL_H
+            if kind == "front":
+                draw_hero_front(d, ox, oy, f, back=False)
+            elif kind == "back":
+                draw_hero_front(d, ox, oy, f, back=True)
+            else:
+                cell = draw_hero_side(d, ox, oy, f, facing_left=(kind == "left"))
+                atlas.paste(cell, (ox, oy), cell)
+    return save(atlas, "sprites", "swordsman", "swordsman_pixel_atlas.png")
+
+
+# --------------------------------------------------------------------------
+# Swordsman ATTACK atlas (4 cols x 9 rows), same cells/layout as the walk
+# atlas. The 4 columns are a swing: windup -> strike -> recover, with a bright
+# slash arc on the strike frames. Controller swaps to this sheet during ATTACK.
+# --------------------------------------------------------------------------
+_SLASH_COLS = [(255, 250, 220, 255), (245, 225, 150, 255), (228, 196, 118, 255)]
+
+
+def _draw_slash_arc(d, cx, cy, radius, start_deg, end_deg, colors=_SLASH_COLS):
+    for i, col in enumerate(colors):
+        r = radius - i
+        if r <= 1:
+            break
+        d.arc([cx - r, cy - r, cx + r, cy + r], start_deg, end_deg, fill=col, width=2)
+
+
+def _draw_swing_blade(d, hx, hy, angle_deg, length):
+    a = math.radians(angle_deg)
+    ex = hx + int(round(math.cos(a) * length))
+    ey = hy + int(round(math.sin(a) * length))
+    d.ellipse([hx - 2, hy - 2, hx + 2, hy + 2], fill=c("gold"))  # guard
+    d.line([(hx, hy), (ex, ey)], fill=c("steel"), width=2)
+    d.line([(hx, hy), (ex, ey)], fill=c("steel_hi"))
+    d.point((ex, ey), fill=c("steel_hi"))
+
+
+def draw_attack_frontlike(d, ox, oy, frame, back):
+    draw_hero_front(d, ox, oy, 1, back=back, with_sword=False)
+    hx, hy = ox + 21, oy + 19  # sword hand
+    base_angles = [-80, -30, 40, 75]  # downward swing (front view)
+    lengths = [12, 15, 18, 13]
+    angle = -base_angles[frame] if back else base_angles[frame]
+    _draw_swing_blade(d, hx, hy, angle, lengths[frame])
+    if frame in (1, 2):
+        radius = 22 if frame == 2 else 16
+        arc_cy = oy + (10 if back else 24)
+        a0, a1 = (120, 235) if back else (-52, 62)
+        _draw_slash_arc(d, ox + 16, arc_cy, radius, a0, a1)
+
+
+def draw_attack_side(frame, facing_left):
+    cell = draw_hero_side(None, 0, 0, 1, facing_left=False, with_sword=False)
+    dd = ImageDraw.Draw(cell)
+    hx, hy = 17, 19
+    lengths = [8, 14, 19, 12]
+    angles = [-22, -6, 6, 26]
+    _draw_swing_blade(dd, hx, hy, angles[frame], lengths[frame])
+    if frame in (1, 2):
+        radius = 13 if frame == 2 else 9
+        _draw_slash_arc(dd, 24, 19, radius, -72, 72)
+    if facing_left:
+        cell = cell.transpose(Image.FLIP_LEFT_RIGHT)
+    return cell
+
+
+def build_swordsman_attack_atlas():
+    cols, rows = 4, 9
+    atlas = new_img(CELL_W * cols, CELL_H * rows)
+    d = ImageDraw.Draw(atlas)
+    row_kind = ["front", "left", "left", "back", "back", "back", "right", "right", "front"]
+    for r, kind in enumerate(row_kind):
+        for f in range(cols):
+            ox, oy = f * CELL_W, r * CELL_H
+            if kind == "front":
+                draw_attack_frontlike(d, ox, oy, f, back=False)
+            elif kind == "back":
+                draw_attack_frontlike(d, ox, oy, f, back=True)
+            else:
+                cell = draw_attack_side(f, facing_left=(kind == "left"))
+                atlas.paste(cell, (ox, oy), cell)
+    return save(atlas, "sprites", "swordsman", "swordsman_attack_pixel_atlas.png")
+
+
+# --------------------------------------------------------------------------
+# Monster: side-profile wolf (faces LEFT). Controller flips horizontally to
+# face movement. Single 64x40 frame; boss variant is tinted via modulate.
+# --------------------------------------------------------------------------
+def build_wolf_sheet():
+    W, H = 64, 40
+    img = new_img(W, H)
+    d = ImageDraw.Draw(img)
+    dk, mid, lt = c("fur_dk"), c("fur"), c("fur_lt")
+    ol = c("outline")
+    # shadow
+    d.ellipse([12, 33, 56, 39], fill=c("shadow"))
+    # tail (bushy, upper right)
+    d.polygon([(48, 22), (60, 8), (63, 14), (54, 26)], fill=dk)
+    d.polygon([(50, 22), (59, 12), (61, 16), (53, 25)], fill=mid)
+    # legs
+    for lx, back in [(20, False), (27, False), (41, True), (48, True)]:
+        col = dk if back else mid
+        d.rectangle([lx, 26, lx + 3, 34], fill=col)
+        d.rectangle([lx, 32, lx + 3, 34], fill=ol)  # paw
+    # body
+    d.rounded_rectangle([16, 13, 52, 29], radius=6, fill=mid)
+    d.rounded_rectangle([16, 13, 52, 19], radius=6, fill=lt)   # back highlight
+    d.rectangle([18, 26, 50, 29], fill=dk)                     # belly shadow
+    # neck + head (left)
+    d.polygon([(20, 14), (8, 14), (3, 22), (10, 27), (22, 26)], fill=mid)
+    d.polygon([(20, 14), (8, 14), (7, 18), (20, 18)], fill=lt)
+    # snout
+    d.rectangle([2, 20, 9, 25], fill=dk)
+    d.point((2, 22), fill=ol)  # nose
+    d.rectangle([2, 24, 8, 25], fill=c("fang"))  # lower jaw / fangs
+    d.point((5, 24), fill=ol)
+    # ears
+    d.polygon([(12, 12), (15, 3), (19, 12)], fill=dk)
+    d.polygon([(17, 12), (20, 5), (23, 13)], fill=mid)
+    d.polygon([(14, 11), (16, 6), (18, 11)], fill=lt)
+    # eye (red, menacing)
+    d.rectangle([11, 16, 13, 18], fill=c("eye_red"))
+    d.point((12, 16), fill=c("gold_hi"))
+    # fur tufts along back
+    for tx in range(20, 50, 5):
+        d.point((tx, 13), fill=lt)
+        d.point((tx + 1, 12), fill=lt)
+    return save(img, "sprites", "wolf_pixel_sheet.png")
+
+
+# --------------------------------------------------------------------------
+# Item icons: 32px cells in a single row. icon_index in items.json = column.
+#   0 wooden_sword  1 iron_sword  2 cloth_armor
+#   3 leather_armor 4 small_health_potion  5 wolf_pelt
+# --------------------------------------------------------------------------
+def _outline_cell(cell):
+    """Add a 1px dark outline around opaque pixels (simple dilation)."""
+    ol = c("outline")
+    px = cell.load()
+    w, h = cell.size
+    edges = []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] != 0:
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h and px[nx, ny][3] != 0:
+                    edges.append((x, y)); break
+    for (x, y) in edges:
+        px[x, y] = ol
+
+
+def _icon_sword(d, blade_dk, blade, blade_hi):
+    # diagonal sword, hilt lower-left, tip upper-right
+    for i in range(18):
+        x = 7 + i; y = 24 - i
+        d.point((x, y), fill=blade)
+        d.point((x - 1, y), fill=blade_dk)
+        d.point((x, y - 1), fill=blade_hi)
+    # guard
+    d.line([(6, 22), (12, 26)], fill=c("gold"))
+    # grip
+    d.line([(5, 24), (8, 27)], fill=c("leather_dk"))
+    d.point((4, 25), fill=c("gold_hi"))
+
+
+def _icon_armor(d, main_dk, main, main_hi, trim):
+    # simple cuirass / tunic silhouette
+    d.polygon([(11, 8), (21, 8), (24, 12), (22, 26), (10, 26), (8, 12)], fill=main)
+    d.polygon([(11, 8), (16, 8), (16, 26), (10, 26), (8, 12)], fill=main_dk)
+    d.polygon([(20, 9), (24, 12), (22, 22)], fill=main_hi)
+    # shoulders
+    d.rectangle([7, 9, 10, 13], fill=main_hi)
+    d.rectangle([22, 9, 25, 13], fill=main_dk)
+    # neck + belt trim
+    d.rectangle([13, 6, 19, 9], fill=trim)
+    d.rectangle([9, 22, 23, 24], fill=trim)
+
+
+def _icon_potion(d):
+    # round red potion with cork
+    d.ellipse([9, 14, 23, 27], fill=c("potion_r"))
+    d.ellipse([11, 16, 18, 22], fill=(240, 150, 150, 255))
+    d.rectangle([13, 8, 19, 15], fill=(180, 70, 74, 255))    # neck
+    d.rectangle([12, 15, 20, 17], fill=c("potion_r"))
+    d.rectangle([13, 5, 19, 9], fill=c("leather"))           # cork
+    d.point((13, 18), fill=(255, 220, 220, 255))             # glint
+
+
+def _icon_pelt(d):
+    dk, mid, lt = c("fur_dk"), c("fur"), c("fur_lt")
+    d.polygon([(8, 12), (16, 8), (24, 12), (26, 22), (16, 26), (6, 22)], fill=mid)
+    d.polygon([(8, 12), (16, 8), (16, 26), (6, 22)], fill=dk)
+    d.polygon([(20, 11), (24, 12), (24, 20)], fill=lt)
+    # paws / limbs
+    for pxp in [(6, 14), (26, 14), (10, 25), (22, 25)]:
+        d.rectangle([pxp[0] - 1, pxp[1], pxp[0] + 1, pxp[1] + 2], fill=dk)
+    d.point((13, 15), fill=c("eye_red"))
+
+
+def _icon_coin(d):
+    d.ellipse([9, 9, 23, 23], fill=c("gold"))
+    d.ellipse([9, 9, 23, 23], outline=c("wood_dk"))
+    d.ellipse([11, 11, 21, 21], fill=c("gold_hi"))
+    d.ellipse([13, 13, 19, 19], fill=c("gold"))
+    d.point((13, 12), fill=(255, 245, 210, 255))
+
+
+def build_item_icons():
+    n = 8
+    sheet = new_img(32 * n, 32)
+    for idx in range(n):
+        cell = new_img(32, 32)
+        d = ImageDraw.Draw(cell)
+        if idx == 0:
+            _icon_sword(d, c("wood_dk"), c("wood_lt"), c("dirt_hi"))
+        elif idx == 1:
+            _icon_sword(d, c("steel_dk"), c("steel"), c("steel_hi"))
+        elif idx == 2:
+            _icon_armor(d, c("tunic_dk"), c("tunic"), c("tunic_hi"), c("thatch"))
+        elif idx == 3:
+            _icon_armor(d, c("leather_dk"), c("leather"), c("dirt_hi"), c("wood_dk"))
+        elif idx == 4:
+            _icon_potion(d)
+        elif idx == 5:
+            _icon_pelt(d)
+        elif idx == 6:
+            _icon_coin(d)
+        else:
+            continue
+        _outline_cell(cell)
+        sheet.paste(cell, (idx * 32, 0), cell)
+    return save(sheet, "items", "item_icons_sheet.png")
+
+
+# --------------------------------------------------------------------------
+# HUD bottom bar. hud.tscn slices ui_atlas.png at fixed regions:
+#   left   (0,   0, 500, 145)
+#   center (500, 0, 540, 145)
+#   right  (1040,0, 380, 145)
+# We repaint those exact regions as a cohesive pixel stone/wood panel so no
+# scene edits are needed. HP/MP bars, quick slots and buttons overlay on top.
+# --------------------------------------------------------------------------
+def _bevel_panel(d, x0, y0, x1, y1, base, hi, lo, rim=None):
+    d.rectangle([x0, y0, x1, y1], fill=base)
+    d.line([(x0, y0), (x1, y0)], fill=hi)          # top light
+    d.line([(x0, y0), (x0, y1)], fill=hi)          # left light
+    d.line([(x0, y1), (x1, y1)], fill=lo)          # bottom shade
+    d.line([(x1, y0), (x1, y1)], fill=lo)          # right shade
+    if rim is not None:
+        d.rectangle([x0 - 2, y0 - 2, x1 + 2, y1 + 2], outline=rim)
+
+
+def _stud(d, x, y):
+    d.ellipse([x - 2, y - 2, x + 2, y + 2], fill=c("gold"))
+    d.point((x - 1, y - 1), fill=c("gold_hi"))
+
+
+def build_hud_atlas():
+    W, H = 1536, 160
+    img = new_img(W, H)
+    d = ImageDraw.Draw(img)
+    rng = random.Random(4242)
+    bar_w, bar_h = 1420, 145
+    # base wood plank panel across the whole bar
+    wood_dk, wood, wood_lt = c("wood_dk"), c("wood"), c("wood_lt")
+    d.rectangle([0, 0, bar_w, bar_h], fill=wood)
+    # plank texture (subtle horizontal grain)
+    for y in range(0, bar_h, 3):
+        for x in range(0, bar_w, 2):
+            if rng.random() < 0.10:
+                d.point((x, y), fill=wood_dk if rng.random() < 0.5 else wood_lt)
+    # outer frame: dark border + gold rim
+    d.rectangle([0, 0, bar_w - 1, bar_h - 1], outline=c("outline"))
+    d.rectangle([3, 3, bar_w - 4, bar_h - 4], outline=c("gold"))
+    d.line([(4, 4), (bar_w - 5, 4)], fill=c("gold_hi"))
+    # region divider grooves at x=500 and x=1040
+    for gx in (500, 1040):
+        d.line([(gx, 6), (gx, bar_h - 7)], fill=c("wood_dk"))
+        d.line([(gx + 1, 6), (gx + 1, bar_h - 7)], fill=wood_lt)
+    # LEFT region: inset panels for HP/MP bars + two gem orbs
+    _bevel_panel(d, 96, 34, 470, 66, c("bark_dk"), wood_lt, c("outline"))
+    _bevel_panel(d, 96, 78, 470, 110, c("bark_dk"), wood_lt, c("outline"))
+    # HP orb (red) and MP orb (blue) sockets on the far left
+    for cx, cy, gdk, gmd, ghi in [(52, 52, (120, 24, 24), (196, 54, 48), (240, 140, 130)),
+                                  (52, 96, (26, 52, 110), (54, 104, 190), (150, 190, 240))]:
+        d.ellipse([cx - 22, cy - 22, cx + 22, cy + 22], fill=c("outline"))
+        d.ellipse([cx - 20, cy - 20, cx + 20, cy + 20], fill=gdk)
+        d.ellipse([cx - 16, cy - 16, cx + 16, cy + 16], fill=gmd)
+        d.ellipse([cx - 11, cy - 15, cx - 2, cy - 6], fill=ghi)
+    # CENTER region: 6 quick-slot sockets
+    slot_w = 62
+    gap = (540 - 8 - 6 * slot_w) // 7
+    for i in range(6):
+        sx = 500 + gap + i * (slot_w + gap)
+        _bevel_panel(d, sx, 40, sx + slot_w, 40 + slot_w, (26, 20, 16), wood_lt, c("outline"))
+        _stud(d, sx + 4, 44)
+    # RIGHT region: status plaque + two button sockets
+    _bevel_panel(d, 1060, 20, 1404, 60, c("bark_dk"), wood_lt, c("outline"))
+    for i in range(2):
+        bx = 1080 + i * 170
+        _bevel_panel(d, bx, 78, bx + 150, 122, (30, 22, 16), c("gold"), c("outline"))
+    # corner studs
+    for (sx, sy) in [(10, 10), (bar_w - 11, 10), (10, bar_h - 11), (bar_w - 11, bar_h - 11)]:
+        _stud(d, sx, sy)
+    return save(img, "ui", "ui_atlas.png")
+
+
+# --------------------------------------------------------------------------
+# Skill icons: 32px cells. icon_index in skills.json = column.
+#   0 basic_slash  1 heavy_slash  2 fireball
+# --------------------------------------------------------------------------
+def _skill_basic_slash(d):
+    # thin curved slash arc + small sword
+    for i in range(20):
+        t = i / 19.0
+        x = int(7 + t * 18)
+        y = int(24 - (t * 18) + 6 * (0.5 - abs(t - 0.5)) * 2)
+        d.point((x, y), fill=c("steel_hi"))
+        d.point((x, y + 1), fill=c("steel"))
+    d.line([(8, 25), (16, 17)], fill=c("steel"))
+    d.line([(7, 26), (9, 24)], fill=c("gold"))
+
+
+def _skill_heavy_slash(d):
+    # thick bright double slash arc
+    for i in range(24):
+        t = i / 23.0
+        x = int(5 + t * 22)
+        y = int(26 - (t * 20) + 7 * (0.5 - abs(t - 0.5)) * 2)
+        d.rectangle([x, y, x + 1, y + 2], fill=(240, 210, 120, 255))
+        d.point((x, y - 1), fill=(255, 240, 190, 255))
+    for i in range(20):
+        t = i / 19.0
+        x = int(9 + t * 18)
+        y = int(30 - (t * 18) + 5 * (0.5 - abs(t - 0.5)) * 2)
+        d.point((x, y), fill=c("steel_hi"))
+
+
+def _skill_fireball(d):
+    d.ellipse([9, 12, 23, 26], fill=(220, 90, 40))
+    d.ellipse([11, 14, 21, 24], fill=(240, 150, 50))
+    d.ellipse([13, 16, 19, 22], fill=(250, 220, 120))
+    # flame tongues upward
+    for fx in (11, 15, 19):
+        d.polygon([(fx, 12), (fx + 2, 5), (fx + 4, 12)], fill=(230, 120, 40))
+
+
+def build_skill_icons():
+    n = 6
+    sheet = new_img(32 * n, 32)
+    draws = [_skill_basic_slash, _skill_heavy_slash, _skill_fireball]
+    for idx, fn in enumerate(draws):
+        cell = new_img(32, 32)
+        fn(ImageDraw.Draw(cell))
+        _outline_cell(cell)
+        sheet.paste(cell, (idx * 32, 0), cell)
+    return save(sheet, "ui", "skill_icons_sheet.png")
+
+
+if __name__ == "__main__":
+    build_greenwood_village()
+    build_black_wolf_forest()
+    build_swordsman_atlas()
+    build_swordsman_attack_atlas()
+    build_wolf_sheet()
+    build_item_icons()
+    build_hud_atlas()
+    build_skill_icons()

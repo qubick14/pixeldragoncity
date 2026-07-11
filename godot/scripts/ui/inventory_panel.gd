@@ -1,5 +1,7 @@
 extends Control
 
+signal item_activated(item_id: String)
+
 const ItemSlotScene := preload("res://scenes/ui/item_slot.tscn")
 
 var _slots: Array[Control] = []
@@ -42,7 +44,14 @@ func _ensure_slots(count: int) -> void:
 		var slot := ItemSlotScene.instantiate()
 		slot.name = "Slot%d" % _slots.size()
 		slot_grid.add_child(slot)
+		if slot.has_signal("activated"):
+			slot.activated.connect(_on_slot_activated)
 		_slots.append(slot)
+
+
+func _on_slot_activated(item_id: String) -> void:
+	if not item_id.is_empty():
+		item_activated.emit(item_id)
 
 
 func _ensure_panel_background() -> void:

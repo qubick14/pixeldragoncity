@@ -4,10 +4,11 @@ const JsonDataLoader := preload("res://scripts/data/json_data_loader.gd")
 
 var items: Dictionary = {}
 var monsters: Dictionary = {}
+var skills: Dictionary = {}
 
 
 func load_all() -> bool:
-	return load_items() and load_monsters()
+	return load_items() and load_monsters() and load_skills()
 
 
 func load_items(path: String = "res://../data/items.json") -> bool:
@@ -26,6 +27,33 @@ func load_monsters(path: String = "res://../data/monsters.json") -> bool:
 		return false
 	monsters = _index_by_id(monster_rows)
 	return true
+
+
+func load_skills(path: String = "res://../data/skills.json") -> bool:
+	var loader := JsonDataLoader.new()
+	var skill_rows: Variant = loader.load_json(path)
+	if not skill_rows is Array:
+		return false
+	skills = _index_by_id(skill_rows)
+	return true
+
+
+func get_skill(skill_id: String) -> Dictionary:
+	return skills.get(skill_id, {})
+
+
+func has_skill(skill_id: String) -> bool:
+	return skills.has(skill_id)
+
+
+func get_skills_for_class(class_id: String) -> Array:
+	var result: Array = []
+	for skill_id in skills:
+		var skill: Dictionary = skills[skill_id]
+		if String(skill.get("class", "")) == class_id:
+			result.append(skill)
+	result.sort_custom(func(a, b): return int(a.get("level", 1)) < int(b.get("level", 1)))
+	return result
 
 
 func get_item(item_id: String) -> Dictionary:

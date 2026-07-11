@@ -1,7 +1,7 @@
 extends SceneTree
 
 const PlayerScene := preload("res://scenes/actors/player.tscn")
-const EXPECTED_TEXTURE_PATH := "res://assets/sprites/swordsman/swordsman_walk_blockout_v1_atlas.png"
+const EXPECTED_TEXTURE_PATH := "res://assets/sprites/swordsman/swordsman_pixel_atlas.png"
 
 
 func _initialize() -> void:
@@ -10,7 +10,7 @@ func _initialize() -> void:
 	root.add_child(player)
 
 	var sprite := player.get_node("VisualRoot/GeneratedSprite") as Sprite2D
-	_assert_equal(sprite.texture.resource_path, EXPECTED_TEXTURE_PATH, "player should use the deterministic swordsman blockout atlas", failures)
+	_assert_equal(sprite.texture.resource_path, EXPECTED_TEXTURE_PATH, "player should use the pixel-art swordsman atlas", failures)
 	_assert_equal(player.walk_atlas_columns, 4, "walk atlas should use 4 columns", failures)
 	_assert_equal(player.walk_atlas_rows, 9, "walk atlas should use 9 rows", failures)
 	_assert_equal(player.get_test_atlas_row(Vector2i(0, 1)), 2, "left movement should use the left-facing row", failures)

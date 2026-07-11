@@ -38,5 +38,5 @@ script = ExtResource("11_save_manager")
 
 [node name="UIRoot" parent="." instance=ExtResource("10_ui_root")]
 
-[connection signal="pressed" from="HUD/BottomPanel/MenuButtons/InventoryButton" to="MenuController" method="_on_inventory_button_pressed"]
-[connection signal="pressed" from="HUD/BottomPanel/MenuButtons/EquipmentButton" to="MenuController" method="_on_equipment_button_pressed"]
+[connection signal="pressed" from="HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/MenuButtons/InventoryButton" to="MenuController" method="_on_inventory_button_pressed"]
+[connection signal="pressed" from="HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/MenuButtons/EquipmentButton" to="MenuController" method="_on_equipment_button_pressed"]

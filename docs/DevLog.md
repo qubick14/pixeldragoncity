@@ -1,5 +1,147 @@
 # DevLog
 
+## 2026-07-11 剑士攻击动画接入状态机
+
+完成：
+
+- 旧 `swordsman_attack_blockout_v1_atlas.png` 为 192px blockout 风格，与本次重做的像素剑士（32×40）不匹配；改为在 `build_pixel_art_pack.py` 生成与行走图同布局的像素攻击 atlas `swordsman_attack_pixel_atlas.png`（4×9，4 帧挥砍 + 金色斩击弧，8 向 + 待机）。
+- `player_controller.gd`：新增 `attack_anim_time` 与 `_attack_anim_timer`，攻击时把 `GeneratedSprite` 贴图临时切换到攻击 atlas 并按计时器播放 4 帧,结束后切回行走 atlas;移除多边形 `AttackSlash`(斩击弧已烘焙进帧);命中判定窗口(`_attack_active_timer`)与视觉动画时长解耦。
+- `_update_generated_sprite_region` 增加防御性 `generated_sprite` 取值与 `_walk_texture` 懒加载,兼容未 `_ready` 直接调用的测试路径。
+
+验证：
+
+- `player_input_and_ui_test.gd` 断言由"多边形斩击可见"更新为"攻击时贴图切到攻击 atlas"：`PASS`。
+- 全量 headless 测试 14/15 `PASS`（仅 `visual_snapshot_test` 需真实渲染器）。
+- 实机截图：向下挥砍动作正常显示剑刃前伸与斩击弧。
+
+## 2026-07-11 v0.6 剑士技能系统
+
+完成：
+
+- `GameData` 读取 `skills.json`，新增 `get_skill` / `get_skills_for_class`，并纳入 `load_all`。
+- `skills.json` 补 `icon_index`；生成剑士技能像素图标 `ui/skill_icons_sheet.png`（普通斩击/重斩/火球）。
+- 玩家新增 MP 资源（`max_mp`、`current_mp`、`mp_regen`、`mana_changed` 信号）与技能系统：`use_skill` 按每技能冷却、MP 消耗与 `multiplier` 结算伤害（`damage = round(attack * multiplier)`），普通攻击键复用技能槽 0（普通斩击）。
+- `project.godot` 新增输入 `skill_slot_1` / `skill_slot_2`（键 1 / 2）。
+- HUD 快捷栏 `set_quick_slot` 升级为显示技能图标 + 键位数字 + 冷却遮罩，并接入真实 MP 显示；`main.gd` 装配剑士技能栏、连接 `mana_changed` 与逐帧冷却刷新。
+- 实施计划见 `docs/superpowers/plans/2026-07-11-pixeldragoncity-v0.6.md`。
+
+验证：
+
+- 新增 `v07_skill_system_test.gd`：`PASS`（技能栏 2 技能、MP 不足拒绝、普通斩击 0 MP 且伤害=攻击力、重斩耗 5 MP 且伤害=round(攻击力×1.8)、冷却门控）。
+- 全量 headless 测试 14/15 `PASS`（仅 `visual_snapshot_test` 需真实渲染器）。
+- 实机截图：HUD 显示 MP 40/40 与 1、2 号技能图标。
+
+## 2026-07-11 像素美术整体重做 + 可玩闭环打通
+
+完成：
+
+- 新增统一像素美术生成管线 `tools/build_pixel_art_pack.py`（共享调色板 + 程序化像素绘制），一键生成背景、人物、怪物、物品图标与 HUD 面板，风格统一。
+- 背景重做：生成青木村 `greenwood_village_bg.png` 与黑狼林 `black_wolf_forest_bg.png` 像素背景（草地纹理、泥土路径、树木、房屋、Boss 空地），替换原地图的纯色 `Polygon2D` 地面。
+- 人物重做：生成剑士像素行走 atlas `swordsman_pixel_atlas.png`（4x9，8 向 + 待机，含 4 帧走路循环），接入 `player.tscn` 并启用最近邻过滤。
+- 怪物重做：生成侧面像素狼 `wolf_pixel_sheet.png`，接入 `wild_wolf.tscn`；`wild_wolf_controller.gd` 按目标水平方向翻转朝向。
+- 物品图标重做：生成 `item_icons_sheet.png`（木剑/铁剑/布衣/皮甲/药水/狼皮/金币），并在 `items.json` 补 `icon_index`。
+- 打通实机可玩闭环（怪物→战斗→掉落→拾取→装备）：`main.gd` 新增 live 会话（InventoryModel + EquipmentModel），掉落物走过即拾取（`dropped_item.gd` 接 `body_entered`），背包/装备面板改由实时数据驱动并显示图标，点击背包物品可装备并即时刷新 ATK/DEF/HP。
+- HUD 重做：将 `ui_atlas.png` 底栏区重绘为像素木质面板（红/蓝宝珠、HP/MP 内嵌槽、6 快捷槽、右侧等级金币牌），沿用原有裁切区域，无需改场景。
+
+验证：
+
+- `tools/build_pixel_art_pack.py` 生成全部资源；`Godot --headless --path godot --import` 导入通过。
+- 新增 `v06_pickup_equip_test.gd`：`PASS`（拾取皮甲→装备→DEF +3，装备槽与背包显示同步）。
+- 全量 headless 测试 13/14 `PASS`；仅 `visual_snapshot_test`（需真实渲染器）在 headless 下无法截图，非 headless 下 `PASS`。
+- 实机截图验证：村庄/森林像素场景、背包图标、装备面板（装木剑后 ATK 12→14）与像素 HUD 均正常。
+
+## 2026-07-09 v0.4 HUD 自适应整改
+
+完成：
+
+- 根据用户截图修复不同窗口尺寸下血条、快捷栏和右侧菜单错位、拉伸及热点偏移问题。
+- 确认根因是固定位置 `Sprite2D` 与 `Control` 混用，导致主布局存在两套坐标系；改为统一的 `LayoutRoot`，并将 HUD atlas 裁成左、中、右三区独立缩放。
+- 将 HP、MP 改为 `ProgressBar`，保持状态值与条形反馈同步。
+- 将右侧菜单入口改为 atlas 图标上的透明 `flat` 按钮热点，并补充 tooltip。
+- 修复 `MenuOverlay` 与 `UIRoot` 双开后残留面板的问题，恢复主要面板互斥和关闭行为。
+- 新增 `hud_responsive_layout_test.gd`，覆盖三区布局、尺寸约束、状态条和菜单按钮契约。
+
+验证：
+
+- Godot 项目 parse 检查通过。
+- `hud_responsive_layout_test.gd`：`PASS`。
+- `player_input_and_ui_test.gd`：`PASS`。
+- `ui_panels_test.gd`：`PASS`。
+- `v05_new_player_loop_test.gd`：`PASS`。
+- 1280 x 720：`/private/tmp/pixeldragoncity_hud_1280x720.png`
+- 1600 x 900：`/private/tmp/pixeldragoncity_hud_1600x900.png`
+- 嵌入窗口：`/private/tmp/pixeldragoncity_hud_embedded_1498x843.png`（实际截图尺寸为 1498 x 842）
+
+待完成：
+
+- 背包、装备、NPC 对话和商店四个主要面板仍需完成视觉整改。
+- 正式拆分 UI atlas 核心 HUD、格子、按钮和面板资源；本次仅使用运行时 `AtlasTexture` 裁区，未生成独立资产。
+
+## 2026-07-09 剑士普通攻击 blockout atlas
+
+完成：
+
+- 新增严格 `6x9`、每格 `192x192` 的剑士普通攻击动作验证 atlas，覆盖八方向与正面参考行。
+- 定义预备、蓄力、起挥、命中、随挥、收势六帧节奏，第 4 帧作为主要命中帧。
+- 新增确定性生成脚本、资源契约测试和独立动作规格文档。
+- 保持本批资源为 `blockout`，未修改并行开发中的玩家控制器和场景。
+
+验证：
+
+- `HOME=/tmp/pixeldragoncity-godot /Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/swordsman_attack_asset_test.gd`
+- 输出包含 `swordsman_attack_asset_test: PASS`。
+
+待完成：
+
+- 将攻击 atlas 接入玩家状态机，使第 4 帧与 `AttackHitbox` 有效窗口对齐。
+- Godot GUI 下确认八方向剑尖范围、命中节奏和脚底稳定性。
+
+## 2026-07-09 v0.2 战斗验收回归
+
+完成：
+
+- 复跑生命组件、战斗流程和主场景战斗验收。
+- 修正 `combat_playthrough_test.gd` 对旧 HUD 排版路径的硬编码，改为在 HUD 边界内查找 `HpValue`，继续验证玩家受伤后的生命显示，同时不再依赖具体布局层级。
+- 使用 Godot 正常渲染模式生成并检查主场景截图，确认玩家、HUD、生命/法力文本和底栏可见。
+
+验证：
+
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --log-file /tmp/pdc_combat_component.log --path godot --script res://scripts/tests/combat_component_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --log-file /tmp/pdc_combat_flow.log --path godot --script res://scripts/tests/combat_flow_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --log-file /tmp/pdc_combat_playthrough.log --path godot --script res://scripts/tests/combat_playthrough_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --quit`
+- `/Applications/Godot.app/Contents/MacOS/Godot --path godot --script res://scripts/tests/visual_snapshot_test.gd`
+- `git diff --check`
+
+待人工复核：
+
+- 静态截图无法评价攻击节奏、野狼追踪、受击停顿和死亡反馈的实际手感；`TODO.md` 中 v0.2 Godot GUI 手动验收继续保留为未完成。
+- 并行进行中的 v0.4 HUD/UI 修改使 `player_input_and_ui_test.gd` 当前出现面板可见性断言失败；该问题不属于 v0.2 战斗范围，本次未修改对应 UI 行为。
+
+## 2026-07-08 v0.5 实机操作问题修复
+
+完成：
+
+- 修复 HUD 鼠标点击无效问题：移除 `UIRoot` 内重复实例化的 HUD，避免高层 CanvasLayer 抢占 Bag / Equip 按钮点击；`Main/HUD` 继续作为唯一可点击 HUD。
+- 调整 `UIRoot` 的 demo 状态加载，使它只在存在兄弟节点 `HUD` 时同步血量、蓝量、经验、金币和等级，不再依赖自身包含 HUD。
+- 为玩家 `start_attack()` 增加短暂 `ATTACK` 动作状态和朝向位移反馈，使 `Space` / `J` 攻击时有可见动作，同时保留原有 AttackHitbox 伤害逻辑。
+- 修复底部 HUD 装饰框和可点击底板高度不一致的问题，使底部 UI 底板高度跟随生成 UI frame。
+- 为 Bag / Equip 增加二次点击关闭逻辑：当前页已打开时再次点击对应按钮会关闭菜单。
+- 为玩家攻击增加 `AttackSlash` 武器挥击可视节点，攻击开始显示，攻击判定结束时隐藏。
+- 补充回归测试，覆盖攻击可见状态和 `UIRoot` 不再包含重复 HUD 的约束。
+
+验证：
+
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/player_input_and_ui_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/ui_panels_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_flow_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/combat_playthrough_test.gd`
+- `/Applications/Godot.app/Contents/MacOS/Godot --headless --path godot --script res://scripts/tests/v05_new_player_loop_test.gd`
+
+待人工复核：
+
+- Godot GUI 下重新试玩：点击 Bag / Equip 应打开对应界面；按 `Space` / `J` 应看到角色短促攻击动作，并能命中近处怪物。
+
 ## 2026-07-07 v0.4 GUI 截图验收与布局修正
 
 完成：

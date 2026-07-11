@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://pixel_dragon_city_environment_placeholder_tileset"]
+[gd_resource type="TileSet" format=3 uid="uid://dyr0gtk3j1iyr"]
 
-[ext_resource type="Texture2D" path="res://assets/tilesets/environment_tileset_v1.png" id="1_environment"]
+[ext_resource type="Texture2D" uid="uid://dadk7bkl52nbn" path="res://assets/tilesets/environment_tileset_v1.png" id="1_environment"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_environment"]
 texture = ExtResource("1_environment")

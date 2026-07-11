@@ -12,6 +12,8 @@ collision_mask = 1
 script = ExtResource("2_script")
 
 [node name="Icon" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("1_item_icons")
 region_enabled = true
 region_rect = Rect2(0, 0, 32, 32)

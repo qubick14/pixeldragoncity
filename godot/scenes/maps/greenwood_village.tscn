@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://pixel_dragon_city_greenwood_village"]
+[gd_scene load_steps=9 format=3 uid="uid://pixel_dragon_city_greenwood_village"]
 
 [ext_resource type="Script" path="res://scripts/actors/village_chief_npc.gd" id="1_village_chief"]
 [ext_resource type="PackedScene" path="res://scenes/actors/npc.tscn" id="2_npc"]
 [ext_resource type="TileSet" path="res://resources/tilesets/environment_placeholder_tileset.tres" id="3_tileset"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/greenwood_village_bg.png" id="4_bg"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
 size = Vector2(1500, 40)
@@ -22,28 +23,10 @@ size = Vector2(40, 900)
 z_index = -20
 tile_set = ExtResource("3_tileset")
 
-[node name="Ground" type="Polygon2D" parent="."]
-color = Color(0.24, 0.38, 0.25, 1)
-polygon = PackedVector2Array(-720, -420, 720, -420, 720, 420, -720, 420)
-
-[node name="VillagePath" type="Polygon2D" parent="."]
-color = Color(0.48, 0.4, 0.28, 1)
-polygon = PackedVector2Array(-620, 120, -300, 40, 60, 30, 500, -40, 640, 18, 88, 118, -260, 116, -600, 190)
-
-[node name="ChiefHut" type="Polygon2D" parent="."]
-position = Vector2(-120, -150)
-color = Color(0.43, 0.31, 0.2, 1)
-polygon = PackedVector2Array(-70, -40, 70, -40, 70, 48, -70, 48)
-
-[node name="ChiefHutRoof" type="Polygon2D" parent="."]
-position = Vector2(-120, -150)
-color = Color(0.28, 0.16, 0.12, 1)
-polygon = PackedVector2Array(-88, -40, 0, -105, 88, -40)
-
-[node name="ExitMarker" type="Polygon2D" parent="."]
-position = Vector2(570, 20)
-color = Color(0.16, 0.27, 0.18, 1)
-polygon = PackedVector2Array(-42, -58, 42, -58, 62, 58, -62, 58)
+[node name="Background" type="Sprite2D" parent="."]
+z_index = -30
+texture_filter = 1
+texture = ExtResource("4_bg")
 
 [node name="SpawnPoints" type="Node2D" parent="."]
 

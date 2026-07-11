@@ -35,6 +35,7 @@ var _combat_initialized: bool = false
 @onready var attack_hitbox: Area2D = $AttackHitbox
 @onready var body_collision: CollisionShape2D = $CollisionShape2D
 @onready var health_bar: Control = $HealthBar
+@onready var generated_sprite: Sprite2D = $VisualRoot/GeneratedSprite
 
 
 func _ready() -> void:
@@ -91,6 +92,10 @@ func _physics_process(delta: float) -> void:
 
 	var to_target := target.global_position - global_position
 	var distance := to_target.length()
+
+	# Face movement/target horizontally (art faces left by default).
+	if absf(to_target.x) > 4.0 and generated_sprite != null:
+		generated_sprite.flip_h = to_target.x > 0.0
 
 	if distance > aggro_range:
 		current_state = State.IDLE

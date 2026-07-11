@@ -30,20 +30,37 @@ func load_demo_state() -> void:
 		var hp: Dictionary = player.get("hp", {}) as Dictionary
 		var mp: Dictionary = player.get("mp", {}) as Dictionary
 		var exp: Dictionary = player.get("exp", {}) as Dictionary
-		$HUD.set_health(int(hp.get("current", 0)), int(hp.get("max", 1)))
-		$HUD.set_mana(int(mp.get("current", 0)), int(mp.get("max", 1)))
-		$HUD.set_experience(int(exp.get("current", 0)), int(exp.get("max", 1)))
-		$HUD.set_gold(_demo_state.get_gold())
-		$HUD.set_level(int(player.get("level", 1)))
+		var hud := get_node_or_null("../HUD")
+		if hud != null:
+			hud.set_health(int(hp.get("current", 0)), int(hp.get("max", 1)))
+			hud.set_mana(int(mp.get("current", 0)), int(mp.get("max", 1)))
+			hud.set_experience(int(exp.get("current", 0)), int(exp.get("max", 1)))
+			hud.set_gold(_demo_state.get_gold())
+			hud.set_level(int(player.get("level", 1)))
 
 	$InventoryPanel.set_inventory(_demo_state.get_inventory())
 	$EquipmentPanel.set_equipment(_demo_state.get_equipment(), _demo_state.get_stats())
 	_loaded = true
 
 
+func set_live_inventory(display: Array) -> void:
+	_ensure_loaded()
+	$InventoryPanel.set_inventory(display)
+
+
+func set_live_equipment(equipment: Dictionary, stats: Dictionary) -> void:
+	_ensure_loaded()
+	$EquipmentPanel.set_equipment(equipment, stats)
+
+
+func get_inventory_panel() -> Control:
+	return $InventoryPanel
+
+
 func show_inventory() -> void:
 	_ensure_loaded()
 	close_all_panels()
+	_close_menu_overlay()
 	$InventoryPanel.visible = true
 	_active_panel = $InventoryPanel
 
@@ -51,6 +68,7 @@ func show_inventory() -> void:
 func show_equipment() -> void:
 	_ensure_loaded()
 	close_all_panels()
+	_close_menu_overlay()
 	$EquipmentPanel.visible = true
 	_active_panel = $EquipmentPanel
 
@@ -63,6 +81,7 @@ func show_dialogue(npc_id: String) -> void:
 	if npc.is_empty():
 		return
 	close_all_panels()
+	_close_menu_overlay()
 	$DialoguePanel.start_dialogue(npc)
 	_active_panel = $DialoguePanel
 
@@ -73,6 +92,7 @@ func show_shop(shop_id: String) -> void:
 	if shop.is_empty():
 		return
 	close_all_panels()
+	_close_menu_overlay()
 	$ShopPanel.set_shop(shop, _demo_state.get_gold())
 	_active_panel = $ShopPanel
 
@@ -89,6 +109,16 @@ func close_all_panels() -> void:
 	$DialoguePanel.visible = false
 	$ShopPanel.visible = false
 	_active_panel = null
+
+
+func _close_menu_overlay() -> void:
+	var menu_overlay := get_node_or_null("../MenuOverlay")
+	if menu_overlay == null:
+		return
+	if menu_overlay.has_method("hide_menu"):
+		menu_overlay.hide_menu()
+	else:
+		menu_overlay.visible = false
 
 
 func _find_by_id(items: Array, id: String) -> Dictionary:

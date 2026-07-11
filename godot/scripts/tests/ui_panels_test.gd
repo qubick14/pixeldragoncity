@@ -144,7 +144,7 @@ func _test_ui_root_routing(failures: Array[String]) -> void:
 	var ui_root := UIRootScene.instantiate()
 	root.add_child(ui_root)
 
-	_assert_equal(ui_root.has_node("HUD"), true, "UIRoot should include HUD", failures)
+	_assert_equal(ui_root.has_node("HUD"), false, "UIRoot should not include a duplicate HUD because Main owns the clickable HUD", failures)
 	ui_root.show_inventory()
 	_assert_equal(ui_root.get_node("InventoryPanel").visible, true, "show_inventory should show inventory", failures)
 	_assert_equal(ui_root.get_node("EquipmentPanel").visible, false, "show_inventory should hide equipment", failures)
@@ -180,8 +180,15 @@ func _test_map_npc_routes_to_ui_root(failures: Array[String]) -> void:
 		return
 
 	var quest_manager := main.get_node("QuestManager")
+	var inventory_button := main.get_node(
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/MenuButtons/InventoryButton"
+	)
+	inventory_button.pressed.emit()
+	_assert_equal(main.get_node("MenuOverlay").visible, true, "HUD inventory button should open MenuOverlay", failures)
+
 	var chief := village.get_node("Npcs/VillageChiefNpc")
 	chief.interact()
+	_assert_equal(main.get_node("MenuOverlay").visible, false, "village chief dialogue should close MenuOverlay", failures)
 	_assert_equal(main.get_node("UIRoot/DialoguePanel").visible, true, "village chief interaction should open dialogue panel", failures)
 	_assert_equal(main.get_node("UIRoot/DialoguePanel/NameLabel").text, "青木村长", "village chief dialogue should show chief name", failures)
 	_assert_equal(quest_manager.get_quest_state("first_hunt"), "active", "village chief interaction should keep first_hunt quest behavior", failures)

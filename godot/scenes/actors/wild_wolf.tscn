@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3 uid="uid://pixel_dragon_city_wild_wolf"]
 
 [ext_resource type="Script" path="res://scripts/actors/wild_wolf_controller.gd" id="1_controller"]
-[ext_resource type="Texture2D" path="res://assets/sprites/monster_sheet.png" id="2_monster_sheet"]
+[ext_resource type="Texture2D" path="res://assets/sprites/wolf_pixel_sheet.png" id="2_monster_sheet"]
 [ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="3_health_component"]
 [ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="4_hurtbox"]
 [ext_resource type="Script" path="res://scripts/combat/hitbox.gd" id="5_hitbox"]
@@ -25,11 +25,12 @@ current_hp = 50
 [node name="VisualRoot" type="Node2D" parent="."]
 
 [node name="GeneratedSprite" type="Sprite2D" parent="VisualRoot"]
-position = Vector2(0, -22)
-scale = Vector2(0.34, 0.34)
+texture_filter = 1
+position = Vector2(0, -16)
+scale = Vector2(0.85, 0.85)
 texture = ExtResource("2_monster_sheet")
 region_enabled = true
-region_rect = Rect2(0, 0, 192, 192)
+region_rect = Rect2(0, 0, 64, 40)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -8)

@@ -24,6 +24,7 @@
 | 剑士行走测试 atlas | `prototype` | `res://assets/sprites/swordsman/swordsman_walk_8dir_test_atlas.png` | 从源图重排出的 `4x7` 临时测试 atlas。 |
 | 剑士 v2 九方向行走 atlas | `production_candidate` | `res://assets/sprites/swordsman/swordsman_walk_9dir_v2_atlas.png` | 重新生成的 `4x9` 规则 atlas，需实机确认动作观感。 |
 | 剑士动作 blockout atlas | `blockout` | `res://assets/sprites/swordsman/swordsman_walk_blockout_v1_atlas.png` | 脚本绘制的 `4x9` 动作基底，当前玩家场景使用，用于验证左右方向和步行动画。 |
+| 剑士普通攻击 blockout atlas | `blockout` | `res://assets/sprites/swordsman/swordsman_attack_blockout_v1_atlas.png` | 脚本绘制的 `6x9` 攻击动作基底；第 4 帧为主要命中帧，尚未接入玩家状态机。 |
 | 怪物 sprite sheet | `prototype` | `res://assets/sprites/monster_sheet.png` | 野狼、黑狼头目、骷髅矿工、黑石魔像概念 sheet，透明背景。 |
 | 道具图标 sheet | `prototype` | `res://assets/items/item_icons_sheet.png` | 装备、药水、材料、任务物品图标，透明背景，后续需重排为规则图标 sheet。 |
 | 场景 tileset | `prototype` | `res://assets/tilesets/environment_tileset_v1.png` | 青木村、黑狼林、黑石矿洞方向 tileset，不透明背景，后续需拆成可铺地图块。 |
@@ -47,9 +48,11 @@
 详细记录见 `docs/art/current_asset_audit_2026-07-02.md`。
 GUI 视口截图审计见 `docs/art/gui_visual_audit_2026-07-02.md`。
 剑士完整步行动作帧审计见 `docs/art/swordsman_walk_cycle_audit_2026-07-06.md`。
+剑士普通攻击动作规格见 `docs/art/swordsman_attack_animation_spec.md`。
 
 - `swordsman_walk_blockout_v1_atlas.png` 是规则 `4x9`、`192x192` cell 的动作验证资源，继续作为当前玩家动作验证基底。
 - `swordsman_walk_9dir_v2_atlas.png` 是规则 `4x9`、`192x192` cell 的外观候选，但步态帧变化偏弱，需 GUI 对比后再决定是否替换 blockout。
+- `swordsman_attack_blockout_v1_atlas.png` 是规则 `6x9`、`192x192` cell 的普通攻击动作验证资源，已通过尺寸、透明通道和逐帧非空测试，等待状态机接入与 GUI 手感验收。
 - `monster_sheet.png`、`item_icons_sheet.png`、`environment_tileset_v1.png` 和 `ui_atlas.png` 仍属于 `prototype`，可作为方向参考和临时资源，不应直接标记为 `production_ready`。
 - `asset_load_test.gd` 已确认当前 Godot 资源引用可以加载。
 
@@ -81,6 +84,7 @@ GUI 视口截图审计见 `docs/art/gui_visual_audit_2026-07-02.md`。
 - `assets/sprites/swordsman/swordsman_walk_9dir_v2_source.png`
 - `assets/sprites/swordsman/swordsman_walk_9dir_v2_atlas.png`
 - `assets/sprites/swordsman/swordsman_walk_blockout_v1_atlas.png`
+- `assets/sprites/swordsman/swordsman_attack_blockout_v1_atlas.png`
 - `assets/portraits/swordsman_portrait_v1_source.png`
 - `assets/portraits/swordsman_portrait_v1.png`
 - `assets/sprites/monster_sheet_source.png`

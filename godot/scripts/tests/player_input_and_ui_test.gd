@@ -121,10 +121,18 @@ func _test_player_combat_nodes_and_attack(failures: Array[String]) -> void:
 
 	var attack_hitbox := player.get_node("AttackHitbox")
 	_assert_equal(attack_hitbox.enabled, false, "player attack hitbox should be disabled by default", failures)
+	_assert_equal(player.has_node("VisualRoot/AttackSlash"), true, "player should have a visible weapon slash node for attacks", failures)
 
 	var first_attack_started: bool = player.start_attack()
 	_assert_equal(first_attack_started, true, "start_attack should begin an attack when ready", failures)
 	_assert_equal(attack_hitbox.enabled, true, "start_attack should enable the attack hitbox", failures)
+	_assert_equal(player.AnimationState.has("ATTACK"), true, "player animation states should include a visible attack state", failures)
+	if player.AnimationState.has("ATTACK"):
+		_assert_equal(player.animation_state, player.AnimationState.ATTACK, "start_attack should enter a visible attack animation state", failures)
+		_assert_equal((player.get_node("VisualRoot") as Node2D).position != Vector2.ZERO, true, "attack animation should visibly offset the player sprite", failures)
+		player._update_generated_sprite_region()
+		var attack_sprite := player.get_node("VisualRoot/GeneratedSprite") as Sprite2D
+		_assert_equal(attack_sprite.texture.resource_path.ends_with("swordsman_attack_pixel_atlas.png"), true, "attack animation should swap to the attack atlas", failures)
 
 	var second_attack_started: bool = player.start_attack()
 	_assert_equal(second_attack_started, false, "attack cooldown should prevent immediate repeat attacks", failures)
@@ -155,9 +163,17 @@ func _test_main_scene_hud(failures: Array[String]) -> void:
 	if hud.has_method("set_level"):
 		hud.set_level(1)
 
-	_assert_equal(main.get_node("HUD/BottomPanel/LeftFrame/HpValue").text, "84/100", "HUD should display health values", failures)
-	_assert_equal(main.get_node("HUD/BottomPanel/LeftFrame/MpValue").text, "32/40", "HUD should display mana values", failures)
-	_assert_equal(main.get_node("HUD/BottomPanel/StatusLabel").text, "Lv.1  EXP 18%  Gold 128", "HUD should display level, EXP, and gold", failures)
+	var hp_row := main.get_node("HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/LeftRegion/StatusBars/HpRow")
+	var mp_row := main.get_node("HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/LeftRegion/StatusBars/MpRow")
+	var hp_bar := hp_row.get_node("HpBar") as ProgressBar
+	var mp_bar := mp_row.get_node("MpBar") as ProgressBar
+	_assert_equal(hp_row.get_node("HpValue").text, "84/100", "HUD should display health values", failures)
+	_assert_equal(hp_bar.max_value, 100.0, "HUD health bar should track maximum health", failures)
+	_assert_equal(hp_bar.value, 84.0, "HUD health bar should track current health", failures)
+	_assert_equal(mp_row.get_node("MpValue").text, "32/40", "HUD should display mana values", failures)
+	_assert_equal(mp_bar.max_value, 40.0, "HUD mana bar should track maximum mana", failures)
+	_assert_equal(mp_bar.value, 32.0, "HUD mana bar should track current mana", failures)
+	_assert_equal(main.get_node("HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/StatusLabel").text, "Lv.1  EXP 18%  Gold 128", "HUD should display level, EXP, and gold", failures)
 
 	main.queue_free()
 
@@ -167,19 +183,26 @@ func _test_hud_layout_and_debug_preview_defaults(failures: Array[String]) -> voi
 	root.add_child(main)
 	await process_frame
 
-	var status_label := main.get_node("HUD/BottomPanel/StatusLabel") as Label
-	var menu_buttons := main.get_node("HUD/BottomPanel/MenuButtons") as HBoxContainer
-	var status_rect := status_label.get_global_rect()
-	var menu_rect := menu_buttons.get_global_rect()
-	var viewport_width := float(ProjectSettings.get_setting("display/window/size/viewport_width", 1600))
+	var bottom_panel := main.get_node("HUD/LayoutRoot/BottomPanel") as Control
+	var regions := main.get_node("HUD/LayoutRoot/BottomPanel/ContentMargin/Regions")
+	var left_rect := (regions.get_node("LeftRegion") as Control).get_global_rect()
+	var center_rect := (regions.get_node("CenterRegion") as Control).get_global_rect()
+	var right_rect := (regions.get_node("RightRegion") as Control).get_global_rect()
+	var bottom_rect := bottom_panel.get_global_rect()
 
-	_assert_equal(status_rect.size.x >= 300.0, true, "HUD status label should reserve enough width for level, EXP, and gold", failures)
-	_assert_equal(status_rect.position.x >= menu_rect.end.x + 24.0, true, "HUD status label should not crowd Bag and Equip buttons", failures)
-	_assert_equal(status_rect.end.x <= viewport_width - 24.0, true, "HUD status label should not risk right-edge clipping", failures)
+	_assert_equal(bottom_panel.anchor_top, 1.0, "bottom panel should anchor from viewport bottom", failures)
+	_assert_equal(bottom_panel.anchor_bottom, 1.0, "bottom panel should anchor to viewport bottom", failures)
+	_assert_equal(absf(bottom_rect.size.y - 145.0) <= 2.0, true, "bottom panel height should remain approximately 145 pixels", failures)
+	_assert_equal(bottom_rect.encloses(left_rect), true, "left HUD region should remain inside the bottom panel", failures)
+	_assert_equal(bottom_rect.encloses(center_rect), true, "center HUD region should remain inside the bottom panel", failures)
+	_assert_equal(bottom_rect.encloses(right_rect), true, "right HUD region should remain inside the bottom panel", failures)
+	_assert_equal(left_rect.intersects(center_rect), false, "left and center HUD regions should not overlap", failures)
+	_assert_equal(center_rect.intersects(right_rect), false, "center and right HUD regions should not overlap", failures)
+	_assert_equal(left_rect.intersects(right_rect), false, "left and right HUD regions should not overlap", failures)
 
 	var art_preview := main.get_node("ArtPreview") as CanvasLayer
 	_assert_equal(art_preview.visible, false, "ArtPreview should be hidden by default outside debug review", failures)
-	var character_portrait := main.get_node("HUD/CharacterPortrait") as TextureRect
+	var character_portrait := main.get_node("HUD/LayoutRoot/CharacterPortrait") as TextureRect
 	_assert_equal(character_portrait.visible, false, "HUD character portrait preview should be hidden during normal gameplay", failures)
 
 	main.queue_free()
@@ -189,24 +212,70 @@ func _test_menu_overlay_toggles(failures: Array[String]) -> void:
 	var main := MainScene.instantiate()
 	root.add_child(main)
 
-	var menu_overlay := main.get_node("MenuOverlay")
-	_assert_equal(menu_overlay.visible, false, "menu overlay should be hidden by default", failures)
+	var menu_overlay := _require_node(main, "MenuOverlay", "main scene should provide MenuOverlay", failures)
+	var ui_root := _require_node(main, "UIRoot", "main scene should provide UIRoot", failures)
+	var inventory_button := _require_button(
+		main,
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/MenuButtons/InventoryButton",
+		"HUD should provide an inventory button",
+		failures
+	)
+	var equipment_button := _require_button(
+		main,
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/MenuButtons/EquipmentButton",
+		"HUD should provide an equipment button",
+		failures
+	)
+	if menu_overlay == null or ui_root == null or inventory_button == null or equipment_button == null:
+		main.queue_free()
+		return
 
-	var inventory_button := main.get_node("HUD/BottomPanel/MenuButtons/InventoryButton") as Button
+	var overlay_inventory := _require_node(menu_overlay, "InventoryPanel", "menu overlay should provide InventoryPanel", failures) as Control
+	var overlay_equipment := _require_node(menu_overlay, "EquipmentPanel", "menu overlay should provide EquipmentPanel", failures) as Control
+	var root_inventory := _require_node(ui_root, "InventoryPanel", "UIRoot should provide InventoryPanel", failures) as Control
+	var root_equipment := _require_node(ui_root, "EquipmentPanel", "UIRoot should provide EquipmentPanel", failures) as Control
+	if overlay_inventory == null or overlay_equipment == null or root_inventory == null or root_equipment == null:
+		main.queue_free()
+		return
+
+	_assert_equal(menu_overlay.visible, false, "menu overlay should be hidden by default", failures)
+	_assert_equal(ui_root.has_node("HUD"), false, "UIRoot should not include a duplicate HUD that steals mouse clicks from the main HUD", failures)
+
 	inventory_button.pressed.emit()
 	_assert_equal(menu_overlay.visible, true, "inventory button should show menu overlay", failures)
-	_assert_equal(menu_overlay.get_node("InventoryPanel").visible, true, "inventory button should show inventory panel", failures)
-	_assert_equal(menu_overlay.get_node("EquipmentPanel").visible, false, "inventory button should hide equipment panel", failures)
+	_assert_equal(overlay_inventory.visible, true, "inventory button should show inventory panel", failures)
+	_assert_equal(overlay_equipment.visible, false, "inventory button should hide equipment panel", failures)
+	_assert_equal(root_inventory.visible, false, "inventory button should not show the UIRoot inventory panel", failures)
+	inventory_button.pressed.emit()
+	_assert_equal(menu_overlay.visible, false, "pressing inventory while inventory is open should close menu overlay", failures)
+	inventory_button.pressed.emit()
+	_assert_equal(menu_overlay.visible, true, "pressing inventory again should reopen menu overlay", failures)
 
-	var equipment_button := main.get_node("HUD/BottomPanel/MenuButtons/EquipmentButton") as Button
 	equipment_button.pressed.emit()
 	_assert_equal(menu_overlay.visible, true, "equipment button should show menu overlay", failures)
-	_assert_equal(menu_overlay.get_node("InventoryPanel").visible, false, "equipment button should hide inventory panel", failures)
-	_assert_equal(menu_overlay.get_node("EquipmentPanel").visible, true, "equipment button should show equipment panel", failures)
+	_assert_equal(overlay_inventory.visible, false, "equipment button should hide inventory panel", failures)
+	_assert_equal(overlay_equipment.visible, true, "equipment button should show equipment panel", failures)
+	_assert_equal(root_equipment.visible, false, "equipment button should not show the UIRoot equipment panel", failures)
+	equipment_button.pressed.emit()
+	_assert_equal(menu_overlay.visible, false, "pressing equipment while equipment is open should close menu overlay", failures)
 
-	var close_button := menu_overlay.get_node("CloseButton") as Button
+	var close_button := _require_button(menu_overlay, "CloseButton", "menu overlay should provide a close button", failures)
+	if close_button == null:
+		main.queue_free()
+		return
+	equipment_button.pressed.emit()
 	close_button.pressed.emit()
 	_assert_equal(menu_overlay.visible, false, "close button should hide menu overlay", failures)
+	for panel_name in ["InventoryPanel", "EquipmentPanel", "DialoguePanel", "ShopPanel"]:
+		var panel := _require_node(ui_root, panel_name, "UIRoot should provide %s" % panel_name, failures) as Control
+		if panel == null:
+			continue
+		_assert_equal(
+			panel.visible,
+			false,
+			"close button should leave UIRoot %s hidden" % panel_name,
+			failures
+		)
 
 	main.queue_free()
 
@@ -254,3 +323,18 @@ func _test_viewport_size(failures: Array[String]) -> void:
 func _assert_equal(actual: Variant, expected: Variant, message: String, failures: Array[String]) -> void:
 	if actual != expected:
 		failures.append("%s. Expected %s, got %s" % [message, str(expected), str(actual)])
+
+
+func _require_node(parent: Node, path: NodePath, message: String, failures: Array[String]) -> Node:
+	var node := parent.get_node_or_null(path)
+	if node == null:
+		failures.append(message)
+	return node
+
+
+func _require_button(parent: Node, path: NodePath, message: String, failures: Array[String]) -> Button:
+	var node := parent.get_node_or_null(path)
+	if not node is Button:
+		failures.append(message)
+		return null
+	return node as Button

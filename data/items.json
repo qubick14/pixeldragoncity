@@ -5,6 +5,7 @@
     "type": "weapon",
     "quality": "common",
     "level": 1,
+    "icon_index": 0,
     "stats": {
       "attack": 2
     },
@@ -16,6 +17,7 @@
     "type": "weapon",
     "quality": "common",
     "level": 1,
+    "icon_index": 1,
     "stats": {
       "attack": 5
     },
@@ -27,6 +29,7 @@
     "type": "armor",
     "quality": "common",
     "level": 1,
+    "icon_index": 2,
     "stats": {
       "defense": 1,
       "max_hp": 5
@@ -39,6 +42,7 @@
     "type": "armor",
     "quality": "uncommon",
     "level": 1,
+    "icon_index": 3,
     "stats": {
       "defense": 3,
       "max_hp": 15
@@ -51,6 +55,7 @@
     "type": "consumable",
     "quality": "common",
     "level": 1,
+    "icon_index": 4,
     "effect": {
       "heal_hp": 30
     },
@@ -62,6 +67,7 @@
     "type": "material",
     "quality": "common",
     "level": 1,
+    "icon_index": 5,
     "price": 3
   }
 ]

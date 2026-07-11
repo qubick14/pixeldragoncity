@@ -60,10 +60,30 @@ func _test_assets_are_visible_in_scenes(failures: Array[String]) -> void:
 		failures.append("Main scene should include ArtPreview for generated assets")
 	if not main.has_node("MapRoot/GreenwoodVillage"):
 		failures.append("Main scene should load GreenwoodVillage under MapRoot")
-	if not main.has_node("HUD/GeneratedUiFrame"):
-		failures.append("HUD should display generated UI art")
-	if not main.has_node("HUD/CharacterPortrait"):
-		failures.append("HUD should display generated character portrait art")
+	_expect_texture_rect(
+		main,
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/LeftRegion/Background",
+		"HUD LeftRegion background should display responsive UI art",
+		failures
+	)
+	_expect_texture_rect(
+		main,
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/CenterRegion/Background",
+		"HUD CenterRegion background should display responsive UI art",
+		failures
+	)
+	_expect_texture_rect(
+		main,
+		"HUD/LayoutRoot/BottomPanel/ContentMargin/Regions/RightRegion/Background",
+		"HUD RightRegion background should display responsive UI art",
+		failures
+	)
+	_expect_texture_rect(
+		main,
+		"HUD/LayoutRoot/CharacterPortrait",
+		"HUD should display character portrait art",
+		failures
+	)
 	if not main.has_node("MenuOverlay"):
 		failures.append("Main scene should include inventory and equipment menu overlay")
 	if not main.has_node("MenuOverlay/InventoryPanel"):
@@ -71,6 +91,19 @@ func _test_assets_are_visible_in_scenes(failures: Array[String]) -> void:
 	if not main.has_node("MenuOverlay/EquipmentPanel"):
 		failures.append("MenuOverlay should display an equipment panel")
 	main.free()
+
+
+func _expect_texture_rect(
+	parent: Node,
+	path: NodePath,
+	message: String,
+	failures: Array[String]
+) -> void:
+	var node := parent.get_node_or_null(path)
+	if not node is TextureRect:
+		failures.append("%s as a TextureRect" % message)
+	elif node.texture == null:
+		failures.append("%s with a texture" % message)
 
 
 func _test_v05_maps_have_placeholder_tilesets(failures: Array[String]) -> void:
