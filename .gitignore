@@ -11,6 +11,9 @@ CLAUDE.local.md
 *.swo
 *~
 
+# Third-party editor addon (kept local, not versioned)
+godot/addons/godot_mcp/
+
 # Godot generated cache
 godot/.godot/
 godot/.import/

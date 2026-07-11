@@ -1,6 +1,7 @@
 extends PanelContainer
 
-signal activated(item_id: String)
+# Emitted on any left-click; double_click distinguishes use/equip (double) from pick-up (single).
+signal slot_pressed(double_click: bool)
 
 const ItemIconsSheet := preload("res://assets/items/item_icons_sheet.png")
 
@@ -16,8 +17,9 @@ func _ready() -> void:
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if not item_data.is_empty():
-			activated.emit(get_item_id())
+		# Report every left-click (even on empty slots) so the coordinator can place a carried item.
+		slot_pressed.emit(event.double_click)
+		accept_event()
 
 
 func set_empty() -> void:

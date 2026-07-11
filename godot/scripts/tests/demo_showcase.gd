@@ -32,7 +32,7 @@ func _initialize() -> void:
 		await _shot("inventory")
 
 	# Equip the starting sword, then show the equipment panel + updated stats.
-	main._on_inventory_item_activated("wooden_sword")
+	main._use_or_equip("wooden_sword")
 	if ui != null and ui.has_method("show_equipment"):
 		ui.show_equipment()
 		await _shot("equipment")

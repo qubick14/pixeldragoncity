@@ -1,5 +1,27 @@
 # DevLog
 
+## 2026-07-11 背包拖放交互、面板可同开、NPC 提示与键位调整
+
+完成：
+
+- 面板可同时打开：`ui_root.gd` 拆分背包/装备为独立开关（`toggle_inventory`/`toggle_equipment`），`Esc` 一次性关闭全部；`main.gd` 新增 `I/B`、`C`、`Esc` 热键。
+- NPC 可见性与提示：`greenwood_village.tscn` 给隐形的村长补可见立绘与名牌；`main.gd` 靠近 NPC 头顶浮现「按 E 交谈」。
+- 光标拾取式物品交互（`main.gd` 为中枢）：单击背包物品拿到光标上，再单击装备槽/快捷格放置，点空地/右键归位；双击直接使用/装备，材料等不可用物品浮字提示；单/双击用 `InputEventMouseButton.double_click` 消歧。
+- `item_slot.gd` 改发 `slot_pressed(double_click)`；`inventory_panel`/`equipment_panel` 上抛 `slot_clicked`/`equip_slot_clicked`；`hud.gd` 快捷栏改为消耗品（图标+数量+数字键号）并发 `quick_slot_clicked`。
+- 装备扩展到五栏位（武器/护甲/头盔/项链/戒指）：`equipment_model.gd`、`game_data.get_item_slot`、`items.json` 新增皮帽/狼牙项链/铜戒指占位装备。
+- 快捷栏/技能键位调整：数字键 1-6 使用消耗品；技能移到 HUD 独立技能格，键位 `J/K/L/U`（`skill_slot_1..4`）；普攻改回空格；HUD 新增技能格显示图标+键位+冷却。
+- 启动横幅更新为 `v0.6 swordsman skills build loaded`。
+
+验证：
+
+- 新增 `v08_item_interaction_test.gd`：拾取→五栏位装备、消耗品赋值快捷格并按键使用扣库存回血、双击不可用物品不留 carry、空白归位不改模型：`PASS`。
+- 更新 `ui_panels_test.gd`（背包+装备可共存、`Esc` 全关）；`v06`/`demo_showcase` 改调 `_use_or_equip`。
+- 全量断言测试 15/15 `PASS`（渲染器专用快照脚本跳过）。
+
+待整改（与后续人物/画面美术一并处理，见 `TODO.md`）：
+
+- 底部快捷栏收窄居中；键位重排 `B/C/V/N/M`；新增技能天赋、任务、地图 UI。
+
 ## 2026-07-11 剑士攻击动画接入状态机
 
 完成：

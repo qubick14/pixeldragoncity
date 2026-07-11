@@ -70,6 +70,12 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
+		# A click on empty ground while carrying an item drops it back to the bag instead of moving.
+		if mouse_event.pressed and (mouse_event.button_index == MOUSE_BUTTON_LEFT or mouse_event.button_index == MOUSE_BUTTON_RIGHT):
+			var session := get_tree().get_first_node_in_group("game_session")
+			if session != null and session.has_method("is_carrying") and session.is_carrying():
+				session.cancel_carry()
+				return
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
 			start_pointer_move(get_global_mouse_position(), false, false)
 		elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
@@ -80,6 +86,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		use_skill_slot(0)
 	elif _is_action_event(event, "skill_slot_2"):
 		use_skill_slot(1)
+	elif _is_action_event(event, "skill_slot_3"):
+		use_skill_slot(2)
+	elif _is_action_event(event, "skill_slot_4"):
+		use_skill_slot(3)
 	elif _is_action_event(event, "interact"):
 		interact_requested.emit()
 

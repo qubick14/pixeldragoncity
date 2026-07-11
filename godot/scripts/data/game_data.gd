@@ -82,6 +82,12 @@ func get_item_slot(item_id: String) -> String:
 			return "weapon"
 		"armor":
 			return "armor"
+		"helmet":
+			return "helmet"
+		"necklace":
+			return "necklace"
+		"ring":
+			return "ring"
 		_:
 			return ""
 

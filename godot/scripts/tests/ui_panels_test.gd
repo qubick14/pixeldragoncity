@@ -147,11 +147,23 @@ func _test_ui_root_routing(failures: Array[String]) -> void:
 	_assert_equal(ui_root.has_node("HUD"), false, "UIRoot should not include a duplicate HUD because Main owns the clickable HUD", failures)
 	ui_root.show_inventory()
 	_assert_equal(ui_root.get_node("InventoryPanel").visible, true, "show_inventory should show inventory", failures)
-	_assert_equal(ui_root.get_node("EquipmentPanel").visible, false, "show_inventory should hide equipment", failures)
 
+	# Inventory and equipment are independent panels and may stay open together.
 	ui_root.show_equipment()
 	_assert_equal(ui_root.get_node("EquipmentPanel").visible, true, "show_equipment should show equipment", failures)
-	_assert_equal(ui_root.get_node("InventoryPanel").visible, false, "show_equipment should hide inventory", failures)
+	_assert_equal(ui_root.get_node("InventoryPanel").visible, true, "equipment should not close inventory", failures)
+
+	# Toggling one panel leaves the other untouched.
+	ui_root.toggle_inventory()
+	_assert_equal(ui_root.get_node("InventoryPanel").visible, false, "toggle_inventory should hide inventory", failures)
+	_assert_equal(ui_root.get_node("EquipmentPanel").visible, true, "toggling inventory should leave equipment open", failures)
+	ui_root.toggle_inventory()
+	_assert_equal(ui_root.get_node("InventoryPanel").visible, true, "toggle_inventory should reopen inventory", failures)
+
+	# Esc closes every open panel at once.
+	ui_root.close_active_panel()
+	_assert_equal(ui_root.get_node("InventoryPanel").visible, false, "close_active_panel should close inventory", failures)
+	_assert_equal(ui_root.get_node("EquipmentPanel").visible, false, "close_active_panel should close equipment", failures)
 
 	ui_root.show_dialogue("merchant")
 	_assert_equal(ui_root.get_node("DialoguePanel").visible, true, "show_dialogue should show dialogue", failures)

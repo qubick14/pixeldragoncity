@@ -1,7 +1,16 @@
 extends Control
 
+signal equip_slot_clicked(slot_id: String, item_id: String, double_click: bool)
+
 const ItemSlotScene := preload("res://scenes/ui/item_slot.tscn")
 const EQUIPMENT_SLOTS := ["weapon", "armor", "helmet", "necklace", "ring"]
+const SLOT_NAMES := {
+	"weapon": "武器",
+	"armor": "护甲",
+	"helmet": "头盔",
+	"necklace": "项链",
+	"ring": "戒指",
+}
 
 var _slot_nodes: Dictionary = {}
 
@@ -46,14 +55,22 @@ func _ensure_slots() -> void:
 		var row := HBoxContainer.new()
 		row.name = "%sRow" % slot_id.capitalize()
 		var label := Label.new()
-		label.text = slot_id.capitalize()
+		label.text = SLOT_NAMES.get(slot_id, slot_id.capitalize())
 		label.custom_minimum_size = Vector2(86, 24)
 		var slot := ItemSlotScene.instantiate()
 		slot.name = "%sSlot" % slot_id.capitalize()
+		if slot.has_signal("slot_pressed"):
+			slot.slot_pressed.connect(_on_slot_pressed.bind(slot_id))
 		row.add_child(label)
 		row.add_child(slot)
 		slot_list.add_child(row)
 		_slot_nodes[slot_id] = slot
+
+
+func _on_slot_pressed(double_click: bool, slot_id: String) -> void:
+	var slot: Control = _slot_nodes.get(slot_id, null)
+	var item_id: String = slot.get_item_id() if slot != null else ""
+	equip_slot_clicked.emit(slot_id, item_id, double_click)
 
 
 func _update_stats(stats: Dictionary) -> void:

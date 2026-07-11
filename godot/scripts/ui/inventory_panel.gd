@@ -1,6 +1,6 @@
 extends Control
 
-signal item_activated(item_id: String)
+signal slot_clicked(index: int, item_id: String, double_click: bool)
 
 const ItemSlotScene := preload("res://scenes/ui/item_slot.tscn")
 
@@ -44,14 +44,17 @@ func _ensure_slots(count: int) -> void:
 		var slot := ItemSlotScene.instantiate()
 		slot.name = "Slot%d" % _slots.size()
 		slot_grid.add_child(slot)
-		if slot.has_signal("activated"):
-			slot.activated.connect(_on_slot_activated)
+		var index := _slots.size()
+		if slot.has_signal("slot_pressed"):
+			slot.slot_pressed.connect(_on_slot_pressed.bind(index))
 		_slots.append(slot)
 
 
-func _on_slot_activated(item_id: String) -> void:
-	if not item_id.is_empty():
-		item_activated.emit(item_id)
+func _on_slot_pressed(double_click: bool, index: int) -> void:
+	var item_id := ""
+	if index >= 0 and index < _slots.size():
+		item_id = _slots[index].get_item_id()
+	slot_clicked.emit(index, item_id, double_click)
 
 
 func _ensure_panel_background() -> void:

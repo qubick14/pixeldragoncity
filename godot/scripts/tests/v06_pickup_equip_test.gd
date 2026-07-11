@@ -30,7 +30,7 @@ func _initialize() -> void:
 	var base_defense: int = int(main._build_stats().get("defense", 0))
 
 	# Equip the armor -> defense should rise by leather_armor's +3.
-	main._on_inventory_item_activated("leather_armor")
+	main._use_or_equip("leather_armor")
 	var new_defense: int = int(main._build_stats().get("defense", 0))
 	if new_defense != base_defense + 3:
 		failures.append("defense after equip expected %d, got %d" % [base_defense + 3, new_defense])

@@ -58,19 +58,30 @@ func get_inventory_panel() -> Control:
 
 
 func show_inventory() -> void:
+	# Inventory and equipment are independent panels that may stay open together.
 	_ensure_loaded()
-	close_all_panels()
 	_close_menu_overlay()
 	$InventoryPanel.visible = true
-	_active_panel = $InventoryPanel
 
 
 func show_equipment() -> void:
 	_ensure_loaded()
-	close_all_panels()
 	_close_menu_overlay()
 	$EquipmentPanel.visible = true
-	_active_panel = $EquipmentPanel
+
+
+func toggle_inventory() -> void:
+	if $InventoryPanel.visible:
+		$InventoryPanel.visible = false
+	else:
+		show_inventory()
+
+
+func toggle_equipment() -> void:
+	if $EquipmentPanel.visible:
+		$EquipmentPanel.visible = false
+	else:
+		show_equipment()
 
 
 func show_dialogue(npc_id: String) -> void:
@@ -98,9 +109,8 @@ func show_shop(shop_id: String) -> void:
 
 
 func close_active_panel() -> void:
-	if _active_panel != null:
-		_active_panel.visible = false
-	_active_panel = null
+	# Esc closes every open panel, including simultaneously-open inventory + equipment.
+	close_all_panels()
 
 
 func close_all_panels() -> void:

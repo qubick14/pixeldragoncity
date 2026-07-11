@@ -11,10 +11,24 @@ var _base_attack: int = 12
 var _base_defense: int = 2
 var _base_max_hp: int = 100
 var _skill_bar: Array = []
+var _interact_prompt: Label = null
+const NPC_INTERACT_RANGE := 260.0
+
+const ItemIconsSheet := preload("res://assets/items/item_icons_sheet.png")
+const QUICK_SLOT_COUNT := 6
+
+# Consumable quick bar (keys 1-6): each entry is an item_id reference (or "").
+var _quick_items: Array = ["", "", "", "", "", ""]
+# Cursor-carry state: {} when empty, else {"item_id": String, "source": "inventory"|"equip", "slot": String}.
+var _carried: Dictionary = {}
+var _cursor_layer: CanvasLayer = null
+var _cursor_icon: TextureRect = null
+var _hint_label: Label = null
+var _hint_time_left: float = 0.0
 
 
 func _ready() -> void:
-	print("Pixel Dragon City v0.2 combat prototype loaded")
+	print("Pixel Dragon City v0.6 swordsman skills build loaded")
 	_setup_game_session()
 	_setup_v05_map_flow()
 	_connect_player_interaction()
@@ -22,7 +36,35 @@ func _ready() -> void:
 	_setup_skills()
 
 
-func _process(_delta: float) -> void:
+func _unhandled_input(event: InputEvent) -> void:
+	# UI panel hotkeys: I/B = inventory, C = character (equipment + stats), Esc = close.
+	var ui := get_node_or_null("UIRoot")
+	if ui == null:
+		return
+	if event.is_action_pressed("open_inventory"):
+		_refresh_ui()
+		ui.toggle_inventory()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("open_character"):
+		_refresh_ui()
+		ui.toggle_equipment()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_cancel"):
+		if is_carrying():
+			cancel_carry()
+		elif ui.has_method("close_active_panel"):
+			ui.close_active_panel()
+		get_viewport().set_input_as_handled()
+	else:
+		for i in range(QUICK_SLOT_COUNT):
+			if event.is_action_pressed("use_item_%d" % (i + 1)):
+				_use_quick_item(i)
+				get_viewport().set_input_as_handled()
+				return
+
+
+func _process(delta: float) -> void:
+	_update_cursor_visuals(delta)
 	var player := get_node_or_null("Player")
 	var hud := get_node_or_null("HUD")
 	if player == null or hud == null or _skill_bar.is_empty():
@@ -34,6 +76,59 @@ func _process(_delta: float) -> void:
 		var total := float(skill.get("cooldown", 1.0))
 		var remaining: float = player.get_skill_cooldown_remaining(String(skill.get("id", "")))
 		hud.set_skill_cooldown(i, remaining / total if total > 0.0 else 0.0)
+	_update_interact_prompt()
+
+
+func _update_interact_prompt() -> void:
+	# Floating "按 E 交谈" hint above the nearest NPC within interact range.
+	var map_manager := get_node_or_null("MapManager")
+	var player := get_node_or_null("Player") as Node2D
+	if map_manager == null or player == null:
+		_hide_interact_prompt()
+		return
+	var current_map: Node = map_manager.get_current_map()
+	if current_map == null or not current_map.has_node("Npcs"):
+		_hide_interact_prompt()
+		return
+
+	var nearest: Node2D = null
+	var nearest_distance := INF
+	for npc in current_map.get_node("Npcs").get_children():
+		if not npc is Node2D or not npc.has_method("interact"):
+			continue
+		var distance := player.global_position.distance_to(npc.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = npc
+
+	if nearest == null or nearest_distance > NPC_INTERACT_RANGE:
+		_hide_interact_prompt()
+		return
+
+	_ensure_interact_prompt(current_map)
+	_interact_prompt.global_position = nearest.global_position + Vector2(-48, -128)
+	_interact_prompt.visible = true
+
+
+func _ensure_interact_prompt(map_node: Node) -> void:
+	if _interact_prompt != null and is_instance_valid(_interact_prompt):
+		if _interact_prompt.get_parent() != map_node:
+			_interact_prompt.get_parent().remove_child(_interact_prompt)
+			map_node.add_child(_interact_prompt)
+		return
+	_interact_prompt = Label.new()
+	_interact_prompt.text = "按 E 交谈"
+	_interact_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_interact_prompt.custom_minimum_size = Vector2(96, 0)
+	_interact_prompt.z_index = 50
+	_interact_prompt.add_theme_color_override("font_color", Color(1, 0.93, 0.6))
+	_interact_prompt.add_theme_font_size_override("font_size", 14)
+	map_node.add_child(_interact_prompt)
+
+
+func _hide_interact_prompt() -> void:
+	if _interact_prompt != null and is_instance_valid(_interact_prompt):
+		_interact_prompt.visible = false
 
 
 func _setup_skills() -> void:
@@ -48,8 +143,9 @@ func _setup_skills() -> void:
 		player.mana_changed.connect(_on_player_mana_changed)
 	if hud == null:
 		return
-	for i in range(6):
-		hud.set_quick_slot(i, _skill_bar[i] if i < _skill_bar.size() else {})
+	for i in range(4):
+		hud.set_skill_slot(i, _skill_bar[i] if i < _skill_bar.size() else {})
+	_refresh_quick_slots()
 	hud.set_mana(int(player.get("current_mp")), int(player.get("max_mp")))
 
 
@@ -220,12 +316,17 @@ func _capture_base_stats() -> void:
 
 func _connect_inventory_ui() -> void:
 	var ui := get_node_or_null("UIRoot")
-	if ui == null or not ui.has_method("get_inventory_panel"):
+	if ui == null:
 		return
-	var panel: Control = ui.get_inventory_panel()
-	if panel != null and panel.has_signal("item_activated"):
-		if not panel.item_activated.is_connected(_on_inventory_item_activated):
-			panel.item_activated.connect(_on_inventory_item_activated)
+	var inv: Control = ui.get_inventory_panel() if ui.has_method("get_inventory_panel") else null
+	if inv != null and inv.has_signal("slot_clicked") and not inv.slot_clicked.is_connected(_on_inventory_slot_clicked):
+		inv.slot_clicked.connect(_on_inventory_slot_clicked)
+	var equip := ui.get_node_or_null("EquipmentPanel")
+	if equip != null and equip.has_signal("equip_slot_clicked") and not equip.equip_slot_clicked.is_connected(_on_equip_slot_clicked):
+		equip.equip_slot_clicked.connect(_on_equip_slot_clicked)
+	var hud := get_node_or_null("HUD")
+	if hud != null and hud.has_signal("quick_slot_clicked") and not hud.quick_slot_clicked.is_connected(_on_quick_slot_clicked):
+		hud.quick_slot_clicked.connect(_on_quick_slot_clicked)
 
 
 func get_item_icon_index(item_id: String) -> int:
@@ -243,7 +344,70 @@ func collect_drop(dropped: Node) -> bool:
 	return collected
 
 
-func _on_inventory_item_activated(item_id: String) -> void:
+# --- Cursor-carry item interaction -------------------------------------------
+func is_carrying() -> bool:
+	return not _carried.is_empty()
+
+
+func cancel_carry() -> void:
+	# Carried items are references only (the model was never mutated), so cancel just clears state.
+	_carried = {}
+	_clear_carry_visual()
+
+
+func _on_inventory_slot_clicked(index: int, item_id: String, double_click: bool) -> void:
+	if double_click and not item_id.is_empty():
+		# Double-click uses/equips directly; also reconciles the pick-up from the first click.
+		cancel_carry()
+		_use_or_equip(item_id)
+		return
+	if is_carrying():
+		# Placing a carried item back onto the bag just cancels the carry.
+		cancel_carry()
+		return
+	if not item_id.is_empty():
+		_pick_up(item_id, "inventory", str(index))
+
+
+func _on_equip_slot_clicked(slot_id: String, item_id: String, double_click: bool) -> void:
+	if is_carrying():
+		var carried_id: String = _carried.get("item_id", "")
+		if _game_data.get_item_slot(carried_id) == slot_id:
+			if _equipment.equip(carried_id):
+				_apply_equipment_stats()
+				cancel_carry()
+				_refresh_ui()
+		else:
+			_show_hint("无法装备到此处")
+		return
+	if not item_id.is_empty():
+		# Single or double click on an equipped item takes it off, back to the bag.
+		if _equipment.unequip(slot_id):
+			_apply_equipment_stats()
+			_refresh_ui()
+
+
+func _on_quick_slot_clicked(index: int, double_click: bool) -> void:
+	if is_carrying():
+		var carried_id: String = _carried.get("item_id", "")
+		if String(_game_data.get_item(carried_id).get("type", "")) == "consumable":
+			_quick_items[index] = carried_id
+			cancel_carry()
+			_refresh_quick_slots()
+		else:
+			_show_hint("只能放入消耗品")
+		return
+	_use_quick_item(index)
+
+
+func _pick_up(item_id: String, source: String, slot: String) -> void:
+	_carried = {"item_id": item_id, "source": source, "slot": slot}
+	_ensure_cursor_layer()
+	_apply_cursor_icon(int(_game_data.get_item(item_id).get("icon_index", -1)))
+	_cursor_icon.visible = true
+
+
+func _use_or_equip(item_id: String) -> void:
 	if _inventory == null or _equipment == null or item_id.is_empty():
 		return
 	if _inventory.is_equipment(item_id):
@@ -253,6 +417,93 @@ func _on_inventory_item_activated(item_id: String) -> void:
 		return
 	if String(_game_data.get_item(item_id).get("type", "")) == "consumable":
 		_use_consumable(item_id)
+		return
+	_show_hint("无法使用")
+
+
+func _use_quick_item(index: int) -> void:
+	if index < 0 or index >= _quick_items.size():
+		return
+	var item_id: String = _quick_items[index]
+	if item_id.is_empty():
+		return
+	if _inventory.count_item(item_id) <= 0:
+		_show_hint("没有可用的%s" % String(_game_data.get_item(item_id).get("name", "物品")))
+		return
+	if String(_game_data.get_item(item_id).get("type", "")) == "consumable":
+		_use_consumable(item_id)
+
+
+func _refresh_quick_slots() -> void:
+	var hud := get_node_or_null("HUD")
+	if hud == null or not hud.has_method("set_item_slot"):
+		return
+	for i in range(QUICK_SLOT_COUNT):
+		var item_id: String = _quick_items[i] if i < _quick_items.size() else ""
+		if item_id.is_empty() or _inventory == null:
+			hud.set_item_slot(i, {})
+			continue
+		var data: Dictionary = _game_data.get_item(item_id).duplicate(true)
+		data["item_id"] = item_id
+		data["quantity"] = _inventory.count_item(item_id)
+		hud.set_item_slot(i, data)
+
+
+# --- Cursor visuals + floating hint ------------------------------------------
+func _ensure_cursor_layer() -> void:
+	if _cursor_layer != null and is_instance_valid(_cursor_layer):
+		return
+	_cursor_layer = CanvasLayer.new()
+	_cursor_layer.layer = 100
+	add_child(_cursor_layer)
+	_cursor_icon = TextureRect.new()
+	_cursor_icon.custom_minimum_size = Vector2(40, 40)
+	_cursor_icon.size = Vector2(40, 40)
+	_cursor_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cursor_icon.visible = false
+	_cursor_layer.add_child(_cursor_icon)
+	_hint_label = Label.new()
+	_hint_label.add_theme_color_override("font_color", Color(1, 0.6, 0.5))
+	_hint_label.add_theme_font_size_override("font_size", 16)
+	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint_label.visible = false
+	_cursor_layer.add_child(_hint_label)
+
+
+func _apply_cursor_icon(icon_index: int) -> void:
+	if icon_index < 0:
+		_cursor_icon.texture = null
+		return
+	var atlas := AtlasTexture.new()
+	atlas.atlas = ItemIconsSheet
+	atlas.region = Rect2(icon_index * 32, 0, 32, 32)
+	_cursor_icon.texture = atlas
+	_cursor_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+
+func _clear_carry_visual() -> void:
+	if _cursor_icon != null and is_instance_valid(_cursor_icon):
+		_cursor_icon.visible = false
+
+
+func _show_hint(text: String) -> void:
+	_ensure_cursor_layer()
+	_hint_label.text = text
+	_hint_label.visible = true
+	_hint_time_left = 1.2
+
+
+func _update_cursor_visuals(delta: float) -> void:
+	if _cursor_layer == null or not is_instance_valid(_cursor_layer):
+		return
+	var mouse := get_viewport().get_mouse_position()
+	if _cursor_icon.visible:
+		_cursor_icon.global_position = mouse + Vector2(-20, -20)
+	if _hint_label.visible:
+		_hint_label.global_position = mouse + Vector2(12, -28)
+		_hint_time_left -= delta
+		if _hint_time_left <= 0.0:
+			_hint_label.visible = false
 
 
 func _use_consumable(item_id: String) -> void:
@@ -308,6 +559,7 @@ func _refresh_ui() -> void:
 	var hud := get_node_or_null("HUD")
 	if hud != null and hud.has_method("set_gold"):
 		hud.set_gold(_inventory.gold)
+	_refresh_quick_slots()
 
 
 func _build_inventory_display() -> Array:

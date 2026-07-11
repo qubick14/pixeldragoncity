@@ -69,5 +69,44 @@
     "level": 1,
     "icon_index": 5,
     "price": 3
+  },
+  {
+    "id": "leather_cap",
+    "name": "皮帽",
+    "type": "helmet",
+    "quality": "common",
+    "level": 1,
+    "icon_index": 2,
+    "stats": {
+      "defense": 1,
+      "max_hp": 8
+    },
+    "price": 18
+  },
+  {
+    "id": "wolf_fang_pendant",
+    "name": "狼牙项链",
+    "type": "necklace",
+    "quality": "uncommon",
+    "level": 1,
+    "icon_index": 5,
+    "stats": {
+      "attack": 2,
+      "max_hp": 6
+    },
+    "price": 40
+  },
+  {
+    "id": "copper_ring",
+    "name": "铜戒指",
+    "type": "ring",
+    "quality": "common",
+    "level": 1,
+    "icon_index": 1,
+    "stats": {
+      "attack": 1,
+      "defense": 1
+    },
+    "price": 25
   }
 ]

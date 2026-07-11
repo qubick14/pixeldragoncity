@@ -5,6 +5,9 @@ var _inventory: Node = null
 var _slots: Dictionary = {
 	"weapon": "",
 	"armor": "",
+	"helmet": "",
+	"necklace": "",
+	"ring": "",
 }
 
 
@@ -14,6 +17,9 @@ func setup(game_data_ref: Node, inventory_ref: Node) -> void:
 	_slots = {
 		"weapon": "",
 		"armor": "",
+		"helmet": "",
+		"necklace": "",
+		"ring": "",
 	}
 
 
