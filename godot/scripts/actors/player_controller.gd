@@ -6,6 +6,7 @@ signal skill_used(skill_id: String, cooldown: float)
 
 const AttackAtlas := preload("res://assets/sprites/swordsman/swordsman_attack_pixel_atlas.png")
 const ProjectileScene := preload("res://scenes/combat/projectile.tscn")
+const NovaBurst := preload("res://scripts/combat/nova_burst.gd")
 
 @export var walk_speed: float = 140.0
 @export var run_speed: float = 220.0
@@ -167,6 +168,9 @@ func use_skill(skill: Dictionary) -> bool:
 	if String(skill.get("type", "")) == "projectile":
 		if not _cast_projectile(damage):
 			return false
+	elif String(skill.get("type", "")) == "aoe":
+		if not _cast_aoe(damage, float(skill.get("radius", 120.0))):
+			return false
 	elif not _perform_attack(damage, cooldown):
 		return false
 
@@ -292,6 +296,30 @@ func _update_attack_timers(delta: float) -> void:
 	if _attack_active_timer == 0.0:
 		_set_attack_hitbox_enabled(false)
 		_hide_attack_slash()
+
+
+func _cast_aoe(damage: int, radius: float) -> bool:
+	if _attack_active_timer > 0.0:
+		return false
+	var world := get_parent()
+	if world != null:
+		var burst := NovaBurst.new()
+		world.add_child(burst)
+		burst.global_position = global_position
+		burst.z_index = 40
+		burst.setup(radius)
+	# Damage every living enemy within the radius.
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if not enemy is Node2D:
+			continue
+		var hc := enemy.get_node_or_null("HealthComponent")
+		if hc == null or (hc.has_method("is_dead") and hc.is_dead()):
+			continue
+		if global_position.distance_to(enemy.global_position) <= radius:
+			hc.apply_damage(damage, self)
+	_attack_anim_timer = attack_anim_time
+	animation_state = AnimationState.ATTACK
+	return true
 
 
 func _cast_projectile(damage: int) -> bool:

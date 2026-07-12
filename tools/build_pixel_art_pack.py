@@ -1052,10 +1052,23 @@ def _skill_fireball(d):
         d.polygon([(fx, 12), (fx + 2, 5), (fx + 4, 12)], fill=(230, 120, 40))
 
 
+def _skill_nova(d):
+    # radiant spirit burst: a bright core with rays outward
+    cx, cy = 16, 16
+    for ang in range(0, 360, 45):
+        a = math.radians(ang)
+        ex = cx + int(round(math.cos(a) * 12))
+        ey = cy + int(round(math.sin(a) * 12))
+        d.line([(cx, cy), (ex, ey)], fill=(150, 210, 240), width=2)
+    d.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=(120, 180, 230))
+    d.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=(180, 224, 246))
+    d.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=(240, 250, 255))
+
+
 def build_skill_icons():
     n = 6
     sheet = new_img(32 * n, 32)
-    draws = [_skill_basic_slash, _skill_heavy_slash, _skill_fireball]
+    draws = [_skill_basic_slash, _skill_heavy_slash, _skill_fireball, _skill_nova]
     for idx, fn in enumerate(draws):
         cell = new_img(32, 32)
         fn(ImageDraw.Draw(cell))

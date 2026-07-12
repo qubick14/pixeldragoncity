@@ -15,9 +15,9 @@ func _initialize() -> void:
 	var hitbox := player.get_node("AttackHitbox")
 	var bar: Array = player.get_skill_bar()
 
-	# Two swordsman melee skills + the prototype fireball granted in main.
-	if bar.size() != 3:
-		failures.append("swordsman skill bar should have 3 skills, got %d" % bar.size())
+	# Two swordsman melee skills + prototype fireball + spirit nova granted in main.
+	if bar.size() != 4:
+		failures.append("swordsman skill bar should have 4 skills, got %d" % bar.size())
 	else:
 		if String(bar[0].get("id", "")) != "basic_slash":
 			failures.append("slot 0 should be basic_slash, got %s" % str(bar[0].get("id")))
@@ -25,6 +25,8 @@ func _initialize() -> void:
 			failures.append("slot 1 should be heavy_slash, got %s" % str(bar[1].get("id")))
 		if String(bar[2].get("id", "")) != "fireball":
 			failures.append("slot 2 should be fireball, got %s" % str(bar[2].get("id")))
+		if String(bar[3].get("id", "")) != "spirit_nova":
+			failures.append("slot 3 should be spirit_nova, got %s" % str(bar[3].get("id")))
 
 	var base_attack := int(player.get("attack"))
 	var basic: Dictionary = bar[0]

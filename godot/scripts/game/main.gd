@@ -171,6 +171,9 @@ func _setup_skills() -> void:
 	var fireball: Dictionary = _game_data.get_skill("fireball")
 	if not fireball.is_empty():
 		_skill_bar.append(fireball)
+	var nova: Dictionary = _game_data.get_skill("spirit_nova")
+	if not nova.is_empty():
+		_skill_bar.append(nova)
 	if player.has_method("set_skill_bar"):
 		player.set_skill_bar(_skill_bar)
 	if player.has_signal("mana_changed") and not player.mana_changed.is_connected(_on_player_mana_changed):
