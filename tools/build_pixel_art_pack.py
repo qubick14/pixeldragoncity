@@ -787,6 +787,44 @@ def _build_wolf_atlas(boss, filename):
     return save(atlas, "sprites", filename)
 
 
+def draw_slime(cd, ox, frame):
+    mid = (74, 138, 156, 255)
+    dk = (46, 96, 112, 255)
+    lt = (120, 184, 200, 255)
+    hi = (188, 226, 236, 255)
+    ol = c("outline")
+    cx = ox + 32
+    bottom = 35
+    squash = {0: 0, 1: 4, 2: 0, 3: -3}[frame]  # bounce: rest / squash / rest / stretch
+    half = 18 + squash
+    height = 20 - squash
+    top = bottom - height
+    # gel body
+    cd.ellipse([cx - half, top, cx + half, bottom], fill=mid)
+    cd.ellipse([cx - half + 1, top + 1, cx + half - 1, top + height // 2 + 2], fill=lt)
+    cd.ellipse([cx - half + 3, bottom - 6, cx + half - 3, bottom - 1], fill=dk)
+    # glossy highlight
+    cd.ellipse([cx - half + 5, top + 3, cx - half + 11, top + 9], fill=hi)
+    # eyes + mouth
+    for ex in (cx - 8, cx + 3):
+        cd.ellipse([ex, top + 6, ex + 5, top + 12], fill=(240, 246, 246, 255))
+        cd.rectangle([ex + 2, top + 8, ex + 3, top + 10], fill=ol)
+    cd.line([(cx - 3, top + 14), (cx + 3, top + 14)], fill=dk)
+    # a couple of drip dabs on the base
+    cd.point((cx - half + 6, bottom - 1), fill=lt)
+    cd.point((cx + half - 7, bottom - 2), fill=lt)
+
+
+def build_slime_sheet():
+    atlas = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
+    for f in range(WOLF_FRAMES):
+        cell = new_img(WOLF_W, WOLF_H)
+        draw_slime(ImageDraw.Draw(cell), 0, f)
+        cell = _finish_wolf_cell(cell)
+        atlas.paste(cell, (f * WOLF_W, 0), cell)
+    return save(atlas, "sprites", "cave_slime_pixel_sheet.png")
+
+
 def build_wolf_sheet():
     return _build_wolf_atlas(False, "wolf_pixel_sheet.png")
 
@@ -1034,6 +1072,7 @@ if __name__ == "__main__":
     build_npcs()
     build_wolf_sheet()
     build_wolf_boss_sheet()
+    build_slime_sheet()
     build_item_icons()
     build_hud_atlas()
     build_skill_icons()

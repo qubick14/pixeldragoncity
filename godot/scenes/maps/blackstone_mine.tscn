@@ -1,7 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://pixel_dragon_city_blackstone_mine"]
+[gd_scene load_steps=8 format=3 uid="uid://pixel_dragon_city_blackstone_mine"]
 
 [ext_resource type="TileSet" path="res://resources/tilesets/environment_placeholder_tileset.tres" id="1_tileset"]
 [ext_resource type="Texture2D" path="res://assets/backgrounds/black_wolf_forest_bg.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/actors/wild_wolf.tscn" id="3_wolf"]
+[ext_resource type="Texture2D" path="res://assets/sprites/cave_slime_pixel_sheet.png" id="4_slime"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
 size = Vector2(1700, 40)
@@ -37,6 +39,45 @@ position = Vector2(-720, 140)
 [node name="Npcs" type="Node2D" parent="."]
 
 [node name="Enemies" type="Node2D" parent="."]
+
+[node name="Slime1" parent="Enemies" instance=ExtResource("3_wolf")]
+position = Vector2(-220, 40)
+max_hp = 40
+attack = 6
+defense = 1
+monster_id = "cave_slime"
+move_speed = 55.0
+aggro_range = 240.0
+attack_range = 40.0
+
+[node name="GeneratedSprite" parent="Enemies/Slime1/VisualRoot" index="0"]
+texture = ExtResource("4_slime")
+
+[node name="Slime2" parent="Enemies" instance=ExtResource("3_wolf")]
+position = Vector2(-20, -70)
+max_hp = 40
+attack = 6
+defense = 1
+monster_id = "cave_slime"
+move_speed = 55.0
+aggro_range = 240.0
+attack_range = 40.0
+
+[node name="GeneratedSprite" parent="Enemies/Slime2/VisualRoot" index="0"]
+texture = ExtResource("4_slime")
+
+[node name="Slime3" parent="Enemies" instance=ExtResource("3_wolf")]
+position = Vector2(160, 60)
+max_hp = 40
+attack = 6
+defense = 1
+monster_id = "cave_slime"
+move_speed = 55.0
+aggro_range = 240.0
+attack_range = 40.0
+
+[node name="GeneratedSprite" parent="Enemies/Slime3/VisualRoot" index="0"]
+texture = ExtResource("4_slime")
 
 [node name="MapBounds" type="Node2D" parent="."]
 
