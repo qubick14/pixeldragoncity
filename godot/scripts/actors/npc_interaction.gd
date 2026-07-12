@@ -11,6 +11,16 @@ signal interacted(npc_id: String)
 func _ready() -> void:
 	if name_label != null:
 		name_label.text = display_name
+	_apply_sprite()
+
+
+func _apply_sprite() -> void:
+	var sprite := get_node_or_null("GeneratedSprite") as Sprite2D
+	if sprite == null:
+		return
+	var path := "res://assets/sprites/npc/npc_%s.png" % npc_id
+	if ResourceLoader.exists(path):
+		sprite.texture = load(path)
 
 
 func interact() -> void:

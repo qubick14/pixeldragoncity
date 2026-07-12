@@ -179,15 +179,21 @@ def stamp_tree(img, cx, cy, scale=1, boss=False):
     s = scale
     # shadow
     d.ellipse([cx - 14 * s, cy - 4 * s, cx + 14 * s, cy + 5 * s], fill=c("shadow"))
-    # trunk
-    d.rectangle([cx - 4 * s, cy - 18 * s, cx + 4 * s, cy], fill=c("bark"))
-    d.rectangle([cx - 4 * s, cy - 18 * s, cx - 1 * s, cy], fill=c("bark_dk"))
-    # canopy: three overlapping blobs
+    ol = c("outline")
     leaf_dk = c("leaf_dk")
     leaf = c("leaf")
     leaf_lt = c("leaf_lt")
     leaf_hi = c("leaf_hi")
     blobs = [(-12, -30, 16), (10, -30, 16), (-1, -44, 20), (-1, -26, 20)]
+    # outline pass: silhouette drawn 1px larger in dark, so a border peeks out
+    d.rectangle([cx - 4 * s - 1, cy - 18 * s, cx + 4 * s + 1, cy + 1], fill=ol)
+    for bx, by, br in blobs:
+        d.ellipse([cx + bx * s - br * s - 1, cy + by * s - br * s - 1,
+                   cx + bx * s + br * s + 1, cy + by * s + br * s + 1], fill=ol)
+    # trunk
+    d.rectangle([cx - 4 * s, cy - 18 * s, cx + 4 * s, cy], fill=c("bark"))
+    d.rectangle([cx - 4 * s, cy - 18 * s, cx - 1 * s, cy], fill=c("bark_dk"))
+    # canopy: three overlapping blobs
     for bx, by, br in blobs:
         d.ellipse([cx + bx * s - br * s, cy + by * s - br * s,
                    cx + bx * s + br * s, cy + by * s + br * s], fill=leaf_dk)
@@ -213,6 +219,10 @@ def stamp_hut(img, cx, cy, roof_color, roof_dk, roof_lt):
     d = ImageDraw.Draw(img)
     # shadow
     d.ellipse([cx - 44, cy + 22, cx + 44, cy + 38], fill=c("shadow"))
+    # outline pass: wall + roof silhouette drawn slightly larger in dark
+    ol = c("outline")
+    d.rectangle([cx - 37, cy - 6, cx + 37, cy + 31], fill=ol)
+    d.polygon([(cx - 48, cy - 3), (cx, cy - 42), (cx + 48, cy - 3)], fill=ol)
     # walls
     d.rectangle([cx - 36, cy - 6, cx + 36, cy + 30], fill=c("wood"))
     d.rectangle([cx - 36, cy - 6, cx + 36, cy + 2], fill=c("wood_lt"))
@@ -390,8 +400,6 @@ def draw_hero_front(d, ox, oy, frame, back=False, with_sword=True):
     bob = _body_bob(frame)
     ldy, rdy, _ = _leg_phase(frame)
     cx = ox + 16
-    # shadow
-    d.ellipse([ox + 8, oy + 33, ox + 24, oy + 38], fill=c("shadow"))
     # legs (pants + boots)
     d.rectangle([cx - 5, oy + 27 + bob, cx - 2, oy + 33 + ldy], fill=c("leather"))
     d.rectangle([cx + 1, oy + 27 + bob, cx + 4, oy + 33 + rdy], fill=c("leather_dk"))
@@ -440,7 +448,6 @@ def draw_hero_side(d, ox, oy, frame, facing_left, with_sword=True):
     bob = _body_bob(frame)
     ldy, rdy, swing = _leg_phase(frame)
     cx = 15
-    dd.ellipse([8, 33, 24, 38], fill=c("shadow"))
     # legs swing front/back
     dd.rectangle([cx - 3 + swing, 27 + bob, cx, 34], fill=c("leather"))
     dd.rectangle([cx - 1 - swing, 27 + bob, cx + 2 - swing, 34], fill=c("leather_dk"))
@@ -470,22 +477,29 @@ def draw_hero_side(d, ox, oy, frame, facing_left, with_sword=True):
     return cell
 
 
+def _finish_cell(cell):
+    """Stardew-style finish: 1px dark outline around the silhouette, soft ground
+    shadow composited beneath (so the shadow itself is not outlined)."""
+    _outline_cell(cell)
+    base = new_img(CELL_W, CELL_H)
+    ImageDraw.Draw(base).ellipse([9, 33, 23, 38], fill=c("shadow"))
+    return Image.alpha_composite(base, cell)
+
+
 def build_swordsman_atlas():
     cols, rows = 4, 9
     atlas = new_img(CELL_W * cols, CELL_H * rows)
-    d = ImageDraw.Draw(atlas)
     # row -> ('front'|'back'|'left'|'right')
     row_kind = ["front", "left", "left", "back", "back", "back", "right", "right", "front"]
     for r, kind in enumerate(row_kind):
         for f in range(cols):
-            ox, oy = f * CELL_W, r * CELL_H
-            if kind == "front":
-                draw_hero_front(d, ox, oy, f, back=False)
-            elif kind == "back":
-                draw_hero_front(d, ox, oy, f, back=True)
+            if kind in ("front", "back"):
+                cell = new_img(CELL_W, CELL_H)
+                draw_hero_front(ImageDraw.Draw(cell), 0, 0, f, back=(kind == "back"))
             else:
-                cell = draw_hero_side(d, ox, oy, f, facing_left=(kind == "left"))
-                atlas.paste(cell, (ox, oy), cell)
+                cell = draw_hero_side(None, 0, 0, f, facing_left=(kind == "left"))
+            cell = _finish_cell(cell)
+            atlas.paste(cell, (f * CELL_W, r * CELL_H), cell)
     return save(atlas, "sprites", "swordsman", "swordsman_pixel_atlas.png")
 
 
@@ -515,50 +529,120 @@ def _draw_swing_blade(d, hx, hy, angle_deg, length):
     d.point((ex, ey), fill=c("steel_hi"))
 
 
-def draw_attack_frontlike(d, ox, oy, frame, back):
-    draw_hero_front(d, ox, oy, 1, back=back, with_sword=False)
-    hx, hy = ox + 21, oy + 19  # sword hand
+# Slash/blade overlays are drawn on top of the already-outlined character so the
+# bright arc keeps its glow (no dark outline around it).
+def _attack_front_overlay(cd, frame, back):
+    hx, hy = 21, 19  # sword hand (cell-local)
     base_angles = [-80, -30, 40, 75]  # downward swing (front view)
     lengths = [12, 15, 18, 13]
     angle = -base_angles[frame] if back else base_angles[frame]
-    _draw_swing_blade(d, hx, hy, angle, lengths[frame])
+    _draw_swing_blade(cd, hx, hy, angle, lengths[frame])
     if frame in (1, 2):
         radius = 22 if frame == 2 else 16
-        arc_cy = oy + (10 if back else 24)
+        arc_cy = 10 if back else 24
         a0, a1 = (120, 235) if back else (-52, 62)
-        _draw_slash_arc(d, ox + 16, arc_cy, radius, a0, a1)
+        _draw_slash_arc(cd, 16, arc_cy, radius, a0, a1)
 
 
-def draw_attack_side(frame, facing_left):
-    cell = draw_hero_side(None, 0, 0, 1, facing_left=False, with_sword=False)
-    dd = ImageDraw.Draw(cell)
+def _attack_side_overlay(cd, frame):
     hx, hy = 17, 19
     lengths = [8, 14, 19, 12]
     angles = [-22, -6, 6, 26]
-    _draw_swing_blade(dd, hx, hy, angles[frame], lengths[frame])
+    _draw_swing_blade(cd, hx, hy, angles[frame], lengths[frame])
     if frame in (1, 2):
         radius = 13 if frame == 2 else 9
-        _draw_slash_arc(dd, 24, 19, radius, -72, 72)
-    if facing_left:
-        cell = cell.transpose(Image.FLIP_LEFT_RIGHT)
-    return cell
+        _draw_slash_arc(cd, 24, 19, radius, -72, 72)
+
+
+def _draw_villager(cd, skin, hair, hair_dk, top, top_dk, top_hi, bottom, long_robe=False, prop=None):
+    cx = 16
+    ol = c("outline")
+    # lower body
+    if long_robe:
+        cd.polygon([(cx - 6, 25), (cx + 5, 25), (cx + 7, 34), (cx - 8, 34)], fill=bottom)
+        cd.polygon([(cx - 6, 25), (cx - 1, 25), (cx - 3, 34), (cx - 8, 34)], fill=top_dk)
+        cd.rectangle([cx - 4, 33, cx - 1, 34], fill=c("leather_dk"))
+        cd.rectangle([cx + 1, 33, cx + 4, 34], fill=c("leather_dk"))
+    else:
+        cd.rectangle([cx - 5, 27, cx - 1, 33], fill=bottom)
+        cd.rectangle([cx + 1, 27, cx + 5, 33], fill=bottom)
+        cd.rectangle([cx - 5, 32, cx - 1, 34], fill=c("leather_dk"))
+        cd.rectangle([cx + 1, 32, cx + 5, 34], fill=c("leather_dk"))
+    # torso (3-tone)
+    cd.rectangle([cx - 5, 15, cx + 4, 27], fill=top)
+    cd.rectangle([cx - 5, 15, cx - 3, 27], fill=top_dk)
+    cd.rectangle([cx + 2, 15, cx + 4, 27], fill=top_hi)
+    cd.rectangle([cx - 5, 25, cx + 4, 26], fill=c("leather_dk"))  # belt
+    # arms + hands
+    cd.rectangle([cx - 7, 16, cx - 5, 24], fill=top_dk)
+    cd.rectangle([cx + 4, 16, cx + 6, 24], fill=top)
+    cd.rectangle([cx - 7, 23, cx - 5, 25], fill=skin)
+    cd.rectangle([cx + 4, 23, cx + 6, 25], fill=skin)
+    # head
+    cd.rectangle([cx - 4, 7, cx + 3, 15], fill=skin)
+    cd.rectangle([cx + 2, 7, cx + 3, 15], fill=_shade(skin, -22))
+    cd.rectangle([cx - 4, 7, cx - 3, 11], fill=_shade(skin, 16))
+    cd.point((cx - 2, 11), fill=ol)
+    cd.point((cx + 1, 11), fill=ol)
+    # hair
+    cd.rectangle([cx - 5, 4, cx + 4, 9], fill=hair)
+    cd.rectangle([cx - 5, 4, cx + 4, 5], fill=hair_dk)
+    cd.rectangle([cx - 5, 7, cx - 4, 11], fill=hair)
+    cd.rectangle([cx + 3, 7, cx + 4, 11], fill=hair)
+    # prop
+    if prop == "staff":
+        cd.rectangle([cx + 6, 5, cx + 7, 31], fill=c("wood_dk"))
+        cd.ellipse([cx + 5, 3, cx + 9, 7], fill=c("gold"))
+        cd.point((cx + 6, 4), fill=c("gold_hi"))
+    elif prop == "hammer":
+        cd.rectangle([cx + 6, 12, cx + 7, 25], fill=c("wood_dk"))
+        cd.rectangle([cx + 4, 9, cx + 9, 13], fill=c("steel"))
+        cd.rectangle([cx + 4, 9, cx + 9, 10], fill=c("steel_hi"))
+    elif prop == "pack":
+        cd.rectangle([cx - 10, 15, cx - 6, 26], fill=c("leather"))
+        cd.rectangle([cx - 10, 15, cx - 6, 17], fill=c("leather_dk"))
+        cd.rectangle([cx - 9, 19, cx - 7, 21], fill=c("gold"))
+
+
+def build_npcs():
+    rgba = lambda r, g, b: (r, g, b, 255)
+    specs = {
+        "npc_village_chief": dict(skin=c("skin"), hair=rgba(184, 182, 188), hair_dk=rgba(126, 126, 134),
+            top=rgba(124, 46, 54), top_dk=rgba(84, 30, 38), top_hi=rgba(154, 66, 76),
+            bottom=rgba(94, 36, 44), long_robe=True, prop="staff"),
+        "npc_merchant": dict(skin=c("skin"), hair=rgba(98, 66, 42), hair_dk=rgba(64, 42, 28),
+            top=rgba(60, 112, 72), top_dk=rgba(40, 78, 50), top_hi=rgba(86, 142, 98),
+            bottom=rgba(72, 58, 40), prop="pack"),
+        "npc_blacksmith": dict(skin=rgba(198, 152, 122), hair=rgba(42, 38, 36), hair_dk=rgba(24, 22, 20),
+            top=rgba(76, 76, 84), top_dk=rgba(50, 50, 56), top_hi=rgba(100, 100, 110),
+            bottom=rgba(54, 46, 42), prop="hammer"),
+    }
+    for name, s in specs.items():
+        cell = new_img(CELL_W, CELL_H)
+        _draw_villager(ImageDraw.Draw(cell), s["skin"], s["hair"], s["hair_dk"],
+            s["top"], s["top_dk"], s["top_hi"], s["bottom"], s.get("long_robe", False), s.get("prop"))
+        cell = _finish_cell(cell)
+        save(cell, "sprites", "npc", name + ".png")
 
 
 def build_swordsman_attack_atlas():
     cols, rows = 4, 9
     atlas = new_img(CELL_W * cols, CELL_H * rows)
-    d = ImageDraw.Draw(atlas)
     row_kind = ["front", "left", "left", "back", "back", "back", "right", "right", "front"]
     for r, kind in enumerate(row_kind):
         for f in range(cols):
-            ox, oy = f * CELL_W, r * CELL_H
-            if kind == "front":
-                draw_attack_frontlike(d, ox, oy, f, back=False)
-            elif kind == "back":
-                draw_attack_frontlike(d, ox, oy, f, back=True)
+            if kind in ("front", "back"):
+                cell = new_img(CELL_W, CELL_H)
+                draw_hero_front(ImageDraw.Draw(cell), 0, 0, 1, back=(kind == "back"), with_sword=False)
+                cell = _finish_cell(cell)
+                _attack_front_overlay(ImageDraw.Draw(cell), f, back=(kind == "back"))
             else:
-                cell = draw_attack_side(f, facing_left=(kind == "left"))
-                atlas.paste(cell, (ox, oy), cell)
+                cell = draw_hero_side(None, 0, 0, 1, facing_left=False, with_sword=False)
+                cell = _finish_cell(cell)
+                _attack_side_overlay(ImageDraw.Draw(cell), f)
+                if kind == "left":
+                    cell = cell.transpose(Image.FLIP_LEFT_RIGHT)
+            atlas.paste(cell, (f * CELL_W, r * CELL_H), cell)
     return save(atlas, "sprites", "swordsman", "swordsman_attack_pixel_atlas.png")
 
 
@@ -595,9 +679,6 @@ def draw_wolf(d, ox, frame, boss=False):
     ol = c("outline")
     bob = {0: 0, 1: -1, 2: 0, 3: -1}[frame]
     oy = bob
-    # ground shadow (no bob)
-    d.ellipse([ox + 12, 33, ox + 56, 39], fill=c("shadow"))
-
     # bushy tail with a couple of fur strands
     d.polygon([(ox + 48, oy + 22), (ox + 61, oy + 6), (ox + 63, oy + 13), (ox + 54, oy + 27)], fill=deep)
     d.polygon([(ox + 48, oy + 22), (ox + 60, oy + 8), (ox + 62, oy + 14), (ox + 54, oy + 26)], fill=dk)
@@ -671,18 +752,30 @@ def draw_wolf(d, ox, frame, boss=False):
         d.point((ox + 12, oy + 16), fill=(255, 210, 120))
 
 
-def build_wolf_sheet():
-    img = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
+def _finish_wolf_cell(cell):
+    """1px outline around the wolf, ground shadow composited beneath."""
+    _outline_cell(cell)
+    base = new_img(WOLF_W, WOLF_H)
+    ImageDraw.Draw(base).ellipse([12, 33, 56, 39], fill=c("shadow"))
+    return Image.alpha_composite(base, cell)
+
+
+def _build_wolf_atlas(boss, filename):
+    atlas = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
     for f in range(WOLF_FRAMES):
-        draw_wolf(ImageDraw.Draw(img), f * WOLF_W, f, boss=False)
-    return save(img, "sprites", "wolf_pixel_sheet.png")
+        cell = new_img(WOLF_W, WOLF_H)
+        draw_wolf(ImageDraw.Draw(cell), 0, f, boss=boss)
+        cell = _finish_wolf_cell(cell)
+        atlas.paste(cell, (f * WOLF_W, 0), cell)
+    return save(atlas, "sprites", filename)
+
+
+def build_wolf_sheet():
+    return _build_wolf_atlas(False, "wolf_pixel_sheet.png")
 
 
 def build_wolf_boss_sheet():
-    img = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
-    for f in range(WOLF_FRAMES):
-        draw_wolf(ImageDraw.Draw(img), f * WOLF_W, f, boss=True)
-    return save(img, "sprites", "wolf_boss_pixel_sheet.png")
+    return _build_wolf_atlas(True, "wolf_boss_pixel_sheet.png")
 
 
 # --------------------------------------------------------------------------
@@ -921,6 +1014,7 @@ if __name__ == "__main__":
     build_black_wolf_forest()
     build_swordsman_atlas()
     build_swordsman_attack_atlas()
+    build_npcs()
     build_wolf_sheet()
     build_wolf_boss_sheet()
     build_item_icons()

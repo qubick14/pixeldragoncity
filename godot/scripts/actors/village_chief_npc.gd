@@ -5,6 +5,13 @@ signal interacted(npc_id: String)
 @export var npc_id: String = "village_chief"
 
 
+func _ready() -> void:
+	var sprite := get_node_or_null("GeneratedSprite") as Sprite2D
+	var path := "res://assets/sprites/npc/npc_%s.png" % npc_id
+	if sprite != null and ResourceLoader.exists(path):
+		sprite.texture = load(path)
+
+
 func interact() -> void:
 	var ui_root := _find_ui_root()
 	if ui_root != null and ui_root.has_method("show_dialogue"):
