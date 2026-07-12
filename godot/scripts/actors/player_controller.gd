@@ -5,6 +5,7 @@ signal mana_changed(current_mp: int, max_mp: int)
 signal skill_used(skill_id: String, cooldown: float)
 
 const AttackAtlas := preload("res://assets/sprites/swordsman/swordsman_attack_pixel_atlas.png")
+const ProjectileScene := preload("res://scenes/combat/projectile.tscn")
 
 @export var walk_speed: float = 140.0
 @export var run_speed: float = 220.0
@@ -163,7 +164,10 @@ func use_skill(skill: Dictionary) -> bool:
 	var multiplier := float(skill.get("multiplier", 1.0))
 	var damage := maxi(1, int(round(float(attack) * multiplier)))
 	var cooldown := float(skill.get("cooldown", attack_cooldown))
-	if not _perform_attack(damage, cooldown):
+	if String(skill.get("type", "")) == "projectile":
+		if not _cast_projectile(damage):
+			return false
+	elif not _perform_attack(damage, cooldown):
 		return false
 
 	if mp_cost > 0:
@@ -288,6 +292,25 @@ func _update_attack_timers(delta: float) -> void:
 	if _attack_active_timer == 0.0:
 		_set_attack_hitbox_enabled(false)
 		_hide_attack_slash()
+
+
+func _cast_projectile(damage: int) -> bool:
+	if _attack_active_timer > 0.0:
+		return false
+	_aim_at_nearest_enemy()
+	var dir := facing_direction if facing_direction.length() > 0.1 else Vector2.DOWN
+	dir = dir.normalized()
+	var world := get_parent()
+	if world == null:
+		return false
+	var proj := ProjectileScene.instantiate()
+	world.add_child(proj)
+	proj.global_position = global_position + dir * 22.0
+	proj.setup(self, damage, dir, 320.0, 1.5)
+	# brief cast pose (reuse attack anim window without a melee hitbox)
+	_attack_anim_timer = attack_anim_time
+	animation_state = AnimationState.ATTACK
+	return true
 
 
 func _aim_at_nearest_enemy() -> void:

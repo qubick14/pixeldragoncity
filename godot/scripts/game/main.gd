@@ -166,6 +166,11 @@ func _setup_skills() -> void:
 	if player == null or _game_data == null:
 		return
 	_skill_bar = _game_data.get_skills_for_class("swordsman")
+	# Prototype: also grant the fireball projectile skill (slot 3 / key L) so the
+	# new projectile mechanic is castable before the class system exists.
+	var fireball: Dictionary = _game_data.get_skill("fireball")
+	if not fireball.is_empty():
+		_skill_bar.append(fireball)
 	if player.has_method("set_skill_bar"):
 		player.set_skill_bar(_skill_bar)
 	if player.has_signal("mana_changed") and not player.mana_changed.is_connected(_on_player_mana_changed):
