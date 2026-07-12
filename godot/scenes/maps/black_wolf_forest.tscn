@@ -32,10 +32,16 @@ texture = ExtResource("3_bg")
 [node name="ForestEntry" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-650, 150)
 
+[node name="ForestMineGate" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(700, -40)
+
 [node name="TransitionPoints" type="Node2D" parent="."]
 
 [node name="ToGreenwoodVillage" type="Marker2D" parent="TransitionPoints"]
 position = Vector2(-720, 170)
+
+[node name="ToBlackstoneMine" type="Marker2D" parent="TransitionPoints"]
+position = Vector2(780, -40)
 
 [node name="MonsterSpawns" type="Node2D" parent="."]
 
@@ -68,12 +74,13 @@ position = Vector2(170, 20)
 position = Vector2(560, -150)
 scale = Vector2(1.28, 1.28)
 max_hp = 220
-attack = 16
+attack = 10
 defense = 4
 monster_id = "black_wolf_leader"
 move_speed = 75.0
 aggro_range = 340.0
 attack_range = 54.0
+attack_cooldown = 1.5
 
 [node name="MapBounds" type="Node2D" parent="."]
 

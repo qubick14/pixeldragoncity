@@ -12,6 +12,9 @@ var _base_attack: int = 12
 var _base_defense: int = 2
 var _base_max_hp: int = 100
 var _skill_bar: Array = []
+var _player_level: int = 1
+var _player_exp: int = 0
+var _player_exp_max: int = 20
 var _interact_prompt: Label = null
 const NPC_INTERACT_RANGE := 260.0
 
@@ -40,6 +43,7 @@ func _ready() -> void:
 	_setup_v05_map_flow()
 	_connect_player_interaction()
 	_connect_combat_prototype()
+	_connect_player_death()
 	_setup_skills()
 
 
@@ -194,6 +198,77 @@ func _setup_v05_map_flow() -> void:
 		_connect_enemy_deaths(map_manager.get_current_map())
 
 
+const DROP_PICKUP_RANGE := 120.0
+
+
+func _try_pickup_nearest_drop(player: Node2D) -> bool:
+	var nearest: Node = null
+	var best := INF
+	for drop in get_tree().get_nodes_in_group("dropped_item"):
+		if not drop is Node2D or not drop.has_method("pickup"):
+			continue
+		var d: float = player.global_position.distance_to(drop.global_position)
+		if d < best:
+			best = d
+			nearest = drop
+	if nearest != null and best <= DROP_PICKUP_RANGE:
+		return collect_drop(nearest)
+	return false
+
+
+func _connect_player_death() -> void:
+	var player := get_node_or_null("Player")
+	if player == null:
+		return
+	var hc := player.get_node_or_null("HealthComponent")
+	if hc != null and hc.has_signal("died") and not hc.died.is_connected(_on_player_died):
+		hc.died.connect(_on_player_died)
+
+
+func _on_player_died(_source: Variant) -> void:
+	# Respawn in the village at full HP, with a red flash + message for feedback.
+	var map_manager := get_node_or_null("MapManager")
+	if map_manager != null:
+		map_manager.load_map("greenwood_village", "village_spawn")
+	var player := get_node_or_null("Player")
+	var hc := player.get_node_or_null("HealthComponent") if player != null else null
+	if hc != null:
+		if hc.has_method("revive"):
+			hc.revive()
+		else:
+			hc.current_hp = hc.max_hp
+			hc.health_changed.emit(hc.current_hp, hc.max_hp)
+	_play_death_flash()
+
+
+func _play_death_flash() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 200
+	add_child(layer)
+	var rect := ColorRect.new()
+	rect.color = Color(0.45, 0.0, 0.0, 0.0)
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	var label := Label.new()
+	label.text = "你已倒下 · 返回青木村"
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_color_override("font_color", Color(1, 0.85, 0.8))
+	label.modulate.a = 0.0
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(label)
+	var tween := create_tween()
+	tween.tween_property(rect, "color:a", 0.7, 0.25)
+	tween.parallel().tween_property(label, "modulate:a", 1.0, 0.25)
+	tween.tween_interval(0.8)
+	tween.tween_property(rect, "color:a", 0.0, 0.6)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(layer.queue_free)
+
+
 func _connect_player_interaction() -> void:
 	var player := get_node_or_null("Player")
 	if player == null or not player.has_signal("interact_requested"):
@@ -214,6 +289,10 @@ func _on_player_interact_requested() -> void:
 		if not transition.is_empty() and float(transition.get("distance", INF)) <= TRANSITION_RANGE:
 			map_manager.load_map(String(transition.get("target_map_id", "")), String(transition.get("target_spawn_id", "")))
 			return
+
+	# Pick up the nearest dropped item in reach.
+	if player_node != null and _try_pickup_nearest_drop(player_node):
+		return
 
 	var current_map: Node = map_manager.get_current_map()
 	if current_map == null or not current_map.has_node("Npcs"):
@@ -257,31 +336,81 @@ func _on_map_loaded(_map_id: String, map_node: Node) -> void:
 
 
 func _connect_enemy_deaths(map_node: Node) -> void:
-	var quest_manager := get_node_or_null("QuestManager")
-	if quest_manager == null or map_node == null or not map_node.has_node("Enemies"):
+	if map_node == null or not map_node.has_node("Enemies"):
 		return
+	var quest_manager := get_node_or_null("QuestManager")
+	var player := get_node_or_null("Player") as Node2D
+	if player != null:
+		player.add_to_group("player")
 
 	for enemy in map_node.get_node("Enemies").get_children():
 		if not enemy is Node:
 			continue
+		enemy.add_to_group("enemy")
+		# Aggro: map-spawned enemies need their target wired to the live player.
+		if player != null and enemy.has_method("set_target"):
+			enemy.set_target(player)
+		# Data-driven attack speed per monster.
+		var mdata := _monster_data(String(enemy.get("monster_id")))
+		if mdata.has("attack_cooldown") and "attack_cooldown" in enemy:
+			enemy.attack_cooldown = float(mdata["attack_cooldown"])
 		var health_component := enemy.get_node_or_null("HealthComponent")
 		if health_component == null or not health_component.has_signal("died"):
 			continue
-		var died_callback := Callable(self, "_on_enemy_died").bind(enemy)
-		if not health_component.died.is_connected(died_callback):
-			health_component.died.connect(died_callback)
+		if quest_manager != null:
+			var died_callback := Callable(self, "_on_enemy_died").bind(enemy)
+			if not health_component.died.is_connected(died_callback):
+				health_component.died.connect(died_callback)
 
 
 func _on_enemy_died(_source: Variant, enemy: Node) -> void:
-	var quest_manager := get_node_or_null("QuestManager")
-	if quest_manager == null:
-		return
-
 	var monster_id := String(enemy.get("monster_id"))
-	if monster_id == "wild_wolf" and quest_manager.has_method("record_wild_wolf_defeated"):
-		quest_manager.record_wild_wolf_defeated()
-	elif monster_id == "black_wolf_leader" and quest_manager.has_method("record_black_wolf_leader_defeated"):
-		quest_manager.record_black_wolf_leader_defeated()
+	_award_kill_rewards(monster_id)
+
+	var quest_manager := get_node_or_null("QuestManager")
+	if quest_manager != null:
+		if monster_id == "wild_wolf" and quest_manager.has_method("record_wild_wolf_defeated"):
+			quest_manager.record_wild_wolf_defeated()
+		elif monster_id == "black_wolf_leader" and quest_manager.has_method("record_black_wolf_leader_defeated"):
+			quest_manager.record_black_wolf_leader_defeated()
+
+
+func _exp_for_level(level: int) -> int:
+	return 20 + (maxi(1, level) - 1) * 15
+
+
+func _award_kill_rewards(monster_id: String) -> void:
+	var data := _monster_data(monster_id)
+	var gold := int(data.get("gold", 0))
+	if gold > 0 and _inventory != null:
+		_inventory.add_gold(gold)
+	_player_exp += maxi(0, int(data.get("exp", 0)))
+	while _player_exp >= _player_exp_max:
+		_player_exp -= _player_exp_max
+		_player_level += 1
+		_player_exp_max = _exp_for_level(_player_level)
+		_on_level_up()
+	_update_progression_hud()
+	_refresh_ui()
+
+
+func _on_level_up() -> void:
+	# Each level makes the swordsman a bit tougher, and fully heals on ding.
+	_base_attack += 2
+	_base_max_hp += 12
+	_apply_equipment_stats()
+	var player := get_node_or_null("Player")
+	var hc := player.get_node_or_null("HealthComponent") if player != null else null
+	if hc != null and hc.has_method("revive"):
+		hc.revive()
+
+
+func _update_progression_hud() -> void:
+	var hud := get_node_or_null("HUD")
+	if hud == null:
+		return
+	hud.set_level(_player_level)
+	hud.set_experience(_player_exp, _player_exp_max)
 
 
 func _connect_combat_prototype() -> void:
@@ -338,6 +467,8 @@ func _setup_game_session() -> void:
 	_capture_base_stats()
 	_connect_inventory_ui()
 	_refresh_ui()
+	_player_exp_max = _exp_for_level(_player_level)
+	_update_progression_hud()
 
 
 func _capture_base_stats() -> void:
@@ -474,8 +605,16 @@ func _hide_transition_prompt() -> void:
 
 
 # --- Bottom-center target info -----------------------------------------------
-var _monster_names: Dictionary = {}
+var _monster_data_cache: Dictionary = {}
 const TARGET_INFO_RANGE := 520.0
+
+
+func _monster_data(monster_id: String) -> Dictionary:
+	if _monster_data_cache.is_empty():
+		for monster in _load_json_array("res://../data/monsters.json"):
+			if monster is Dictionary:
+				_monster_data_cache[String(monster.get("id", ""))] = monster
+	return _monster_data_cache.get(monster_id, {})
 
 
 func _update_target_info() -> void:
@@ -511,20 +650,9 @@ func _update_target_info() -> void:
 		hud.clear_target()
 		return
 	var monster_id := String(nearest.get("monster_id"))
-	var info := _monster_info(monster_id)
+	var info := _monster_data(monster_id)
 	# Monsters have no mana; the MP bar reads 0/0 for now.
 	hud.set_target(String(info.get("name", monster_id)), int(info.get("level", 0)), int(nearest_hc.current_hp), int(nearest_hc.max_hp), 0, 0)
-
-
-func _monster_info(monster_id: String) -> Dictionary:
-	if _monster_names.is_empty():
-		for monster in _load_json_array("res://../data/monsters.json"):
-			if monster is Dictionary:
-				_monster_names[String(monster.get("id", ""))] = {
-					"name": String(monster.get("name", monster.get("id", ""))),
-					"level": int(monster.get("level", 0)),
-				}
-	return _monster_names.get(monster_id, {"name": monster_id, "level": 0})
 
 
 # --- Info panel data assembly (skills / quests / map) ------------------------

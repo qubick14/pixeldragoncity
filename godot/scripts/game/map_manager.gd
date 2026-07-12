@@ -5,11 +5,15 @@ signal map_loaded(map_id: String, map_node: Node)
 const MAP_SCENES := {
 	"greenwood_village": preload("res://scenes/maps/greenwood_village.tscn"),
 	"black_wolf_forest": preload("res://scenes/maps/black_wolf_forest.tscn"),
+	"blackstone_mine": preload("res://scenes/maps/blackstone_mine.tscn"),
 }
 
 const SPAWN_NODE_PATHS := {
 	"village_spawn": "SpawnPoints/VillageSpawn",
+	"village_east_gate": "SpawnPoints/VillageEastGate",
 	"forest_entry": "SpawnPoints/ForestEntry",
+	"forest_mine_gate": "SpawnPoints/ForestMineGate",
+	"mine_entry": "SpawnPoints/MineEntry",
 }
 
 @export var map_root_path: NodePath = NodePath("../MapRoot")

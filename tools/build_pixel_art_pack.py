@@ -564,48 +564,125 @@ def build_swordsman_attack_atlas():
 
 # --------------------------------------------------------------------------
 # Monster: side-profile wolf (faces LEFT). Controller flips horizontally to
-# face movement. Single 64x40 frame; boss variant is tinted via modulate.
+# face movement and cycles the 4 frames while chasing. Cells are 64x40; the
+# black wolf leader is a bulkier, darker boss variant (own sheet).
 # --------------------------------------------------------------------------
-def build_wolf_sheet():
-    W, H = 64, 40
-    img = new_img(W, H)
-    d = ImageDraw.Draw(img)
-    dk, mid, lt = c("fur_dk"), c("fur"), c("fur_lt")
+WOLF_W, WOLF_H, WOLF_FRAMES = 64, 40, 4
+
+
+def _wolf_leg_lift(frame):
+    """Per-leg vertical lift for a 4-frame diagonal trot (front1, front2, back1, back2)."""
+    table = {
+        0: (0, 0, 0, 0),
+        1: (-3, 0, 0, -3),
+        2: (0, 0, 0, 0),
+        3: (0, -3, -3, 0),
+    }
+    return table[frame]
+
+
+def _shade(col, delta):
+    return tuple(max(0, min(255, ch + delta)) for ch in col[:3]) + (255,)
+
+
+def draw_wolf(d, ox, frame, boss=False):
+    if boss:
+        dk, mid, lt = c("fur_boss_dk"), c("fur_boss"), c("fur_boss_lt")
+    else:
+        dk, mid, lt = c("fur_dk"), c("fur"), c("fur_lt")
+    deep = _shade(dk, -16)   # deepest shadow / outline-ish
+    hi = _shade(lt, 22)      # brightest fur highlight
     ol = c("outline")
-    # shadow
-    d.ellipse([12, 33, 56, 39], fill=c("shadow"))
-    # tail (bushy, upper right)
-    d.polygon([(48, 22), (60, 8), (63, 14), (54, 26)], fill=dk)
-    d.polygon([(50, 22), (59, 12), (61, 16), (53, 25)], fill=mid)
-    # legs
-    for lx, back in [(20, False), (27, False), (41, True), (48, True)]:
+    bob = {0: 0, 1: -1, 2: 0, 3: -1}[frame]
+    oy = bob
+    # ground shadow (no bob)
+    d.ellipse([ox + 12, 33, ox + 56, 39], fill=c("shadow"))
+
+    # bushy tail with a couple of fur strands
+    d.polygon([(ox + 48, oy + 22), (ox + 61, oy + 6), (ox + 63, oy + 13), (ox + 54, oy + 27)], fill=deep)
+    d.polygon([(ox + 48, oy + 22), (ox + 60, oy + 8), (ox + 62, oy + 14), (ox + 54, oy + 26)], fill=dk)
+    d.polygon([(ox + 50, oy + 22), (ox + 58, oy + 12), (ox + 60, oy + 16), (ox + 53, oy + 25)], fill=mid)
+    for sx, sy in [(59, 9), (61, 12), (57, 15)]:
+        d.point((ox + sx, oy + sy), fill=lt)
+
+    # legs (diagonal trot) with a lit front edge + toe
+    lifts = _wolf_leg_lift(frame)
+    for i, (lx, back) in enumerate([(20, False), (27, False), (41, True), (48, True)]):
         col = dk if back else mid
-        d.rectangle([lx, 26, lx + 3, 34], fill=col)
-        d.rectangle([lx, 32, lx + 3, 34], fill=ol)  # paw
-    # body
-    d.rounded_rectangle([16, 13, 52, 29], radius=6, fill=mid)
-    d.rounded_rectangle([16, 13, 52, 19], radius=6, fill=lt)   # back highlight
-    d.rectangle([18, 26, 50, 29], fill=dk)                     # belly shadow
-    # neck + head (left)
-    d.polygon([(20, 14), (8, 14), (3, 22), (10, 27), (22, 26)], fill=mid)
-    d.polygon([(20, 14), (8, 14), (7, 18), (20, 18)], fill=lt)
-    # snout
-    d.rectangle([2, 20, 9, 25], fill=dk)
-    d.point((2, 22), fill=ol)  # nose
-    d.rectangle([2, 24, 8, 25], fill=c("fang"))  # lower jaw / fangs
-    d.point((5, 24), fill=ol)
-    # ears
-    d.polygon([(12, 12), (15, 3), (19, 12)], fill=dk)
-    d.polygon([(17, 12), (20, 5), (23, 13)], fill=mid)
-    d.polygon([(14, 11), (16, 6), (18, 11)], fill=lt)
-    # eye (red, menacing)
-    d.rectangle([11, 16, 13, 18], fill=c("eye_red"))
-    d.point((12, 16), fill=c("gold_hi"))
-    # fur tufts along back
+        top = oy + 26 + lifts[i]
+        d.rectangle([ox + lx, top, ox + lx + 3, 34], fill=col)
+        d.rectangle([ox + lx, top, ox + lx, 34], fill=_shade(col, 18))   # front-edge light
+        d.rectangle([ox + lx + 3, top, ox + lx + 3, 34], fill=deep)      # back-edge shadow
+        d.rectangle([ox + lx, 32, ox + lx + 3, 34], fill=deep)           # paw
+        d.point((ox + lx, 33), fill=ol)
+
+    # body: mid base, lit top band, dark belly, rounded haunch + shoulder
+    d.rounded_rectangle([ox + 16, oy + 13, ox + 52, oy + 29], radius=6, fill=mid)
+    d.rounded_rectangle([ox + 16, oy + 12, ox + 52, oy + 18], radius=5, fill=lt)
+    d.rectangle([ox + 18, oy + 11, ox + 50, oy + 12], fill=hi)           # spine highlight
+    d.rectangle([ox + 18, oy + 26, ox + 51, oy + 29], fill=deep)         # belly shadow
+    d.ellipse([ox + 40, oy + 15, ox + 54, oy + 29], fill=mid)           # haunch mass
+    d.ellipse([ox + 42, oy + 16, ox + 50, oy + 23], fill=lt)            # haunch light
+    d.ellipse([ox + 17, oy + 15, ox + 28, oy + 27], fill=_shade(mid, 6))  # shoulder
+
+    # fur texture: short diagonal strokes across the flank
+    for fx in range(20, 50, 3):
+        fy = oy + 20 + ((fx // 3) % 3)
+        d.line([(ox + fx, fy), (ox + fx + 2, fy - 2)], fill=_shade(mid, -14))
+        d.point((ox + fx + 1, fy - 1), fill=lt)
+
+    # neck + head (faces left)
+    d.polygon([(ox + 22, oy + 13), (ox + 8, oy + 13), (ox + 3, oy + 22), (ox + 10, oy + 28), (ox + 24, oy + 27)], fill=mid)
+    d.polygon([(ox + 22, oy + 13), (ox + 8, oy + 13), (ox + 7, oy + 18), (ox + 22, oy + 18)], fill=lt)
+    # neck ruff (fur under the jaw)
+    for rx in range(9, 22, 3):
+        d.line([(ox + rx, oy + 26), (ox + rx + 1, oy + 29)], fill=deep)
+        d.point((ox + rx, oy + 26), fill=lt)
+    # snout (tapered) + nose + jaw
+    d.polygon([(ox + 8, oy + 18), (ox + 1, oy + 21), (ox + 1, oy + 25), (ox + 9, oy + 25)], fill=dk)
+    d.polygon([(ox + 8, oy + 18), (ox + 3, oy + 20), (ox + 9, oy + 21)], fill=mid)
+    d.rectangle([ox + 1, oy + 21, ox + 2, oy + 22], fill=ol)             # nose
+    d.rectangle([ox + 2, oy + 24, ox + 8, oy + 25], fill=c("fang"))      # fangs
+    d.point((ox + 4, oy + 24), fill=ol)
+    d.point((ox + 6, oy + 24), fill=ol)
+    # ears (with dark inner)
+    d.polygon([(ox + 11, oy + 12), (ox + 14, oy + 2), (ox + 18, oy + 12)], fill=dk)
+    d.polygon([(ox + 13, oy + 11), (ox + 14, oy + 5), (ox + 16, oy + 11)], fill=deep)
+    d.polygon([(ox + 17, oy + 12), (ox + 20, oy + 4), (ox + 23, oy + 13)], fill=mid)
+    d.polygon([(ox + 18, oy + 11), (ox + 20, oy + 6), (ox + 21, oy + 11)], fill=lt)
+    # brow + eye (menacing)
+    d.line([(ox + 10, oy + 15), (ox + 14, oy + 15)], fill=deep)
+    d.rectangle([ox + 11, oy + 16, ox + 13, oy + 18], fill=c("eye_red"))
+    d.point((ox + 12, oy + 16), fill=c("gold_hi"))
+
+    # back fur tufts
     for tx in range(20, 50, 5):
-        d.point((tx, 13), fill=lt)
-        d.point((tx + 1, 12), fill=lt)
+        d.point((ox + tx, oy + 12), fill=lt)
+        d.point((ox + tx + 1, oy + 11), fill=hi)
+
+    if boss:
+        # spiked mane, scar over the eye, brighter glare
+        for mx in range(16, 50, 4):
+            d.polygon([(ox + mx, oy + 12), (ox + mx + 2, oy + 3), (ox + mx + 4, oy + 12)], fill=deep)
+            d.polygon([(ox + mx + 1, oy + 11), (ox + mx + 2, oy + 6), (ox + mx + 3, oy + 11)], fill=dk)
+            d.point((ox + mx + 2, oy + 7), fill=lt)
+        d.line([(ox + 9, oy + 13), (ox + 14, oy + 20)], fill=c("fang"))
+        d.rectangle([ox + 11, oy + 16, ox + 13, oy + 18], fill=(255, 60, 40))
+        d.point((ox + 12, oy + 16), fill=(255, 210, 120))
+
+
+def build_wolf_sheet():
+    img = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
+    for f in range(WOLF_FRAMES):
+        draw_wolf(ImageDraw.Draw(img), f * WOLF_W, f, boss=False)
     return save(img, "sprites", "wolf_pixel_sheet.png")
+
+
+def build_wolf_boss_sheet():
+    img = new_img(WOLF_W * WOLF_FRAMES, WOLF_H)
+    for f in range(WOLF_FRAMES):
+        draw_wolf(ImageDraw.Draw(img), f * WOLF_W, f, boss=True)
+    return save(img, "sprites", "wolf_boss_pixel_sheet.png")
 
 
 # --------------------------------------------------------------------------
@@ -845,6 +922,7 @@ if __name__ == "__main__":
     build_swordsman_atlas()
     build_swordsman_attack_atlas()
     build_wolf_sheet()
+    build_wolf_boss_sheet()
     build_item_icons()
     build_hud_atlas()
     build_skill_icons()

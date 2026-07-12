@@ -17,6 +17,8 @@ size = Vector2(28, 54)
 size = Vector2(44, 30)
 
 [node name="Player" type="CharacterBody2D"]
+collision_layer = 16
+collision_mask = 1
 script = ExtResource("1_controller")
 
 [node name="HealthComponent" type="Node" parent="."]
@@ -120,7 +122,6 @@ attack = 12
 enabled = false
 
 [node name="AttackShape" type="CollisionShape2D" parent="AttackHitbox"]
-position = Vector2(0, 24)
 shape = SubResource("RectangleShape2D_attack")
 
 [node name="HealthBar" parent="." instance=ExtResource("6_health_bar")]

@@ -1,5 +1,30 @@
 # DevLog
 
+## 2026-07-12 怪物美术、战斗修复、经验/地图流转
+
+完成：
+
+- 怪物美术：野狼改 4 帧小跑 atlas（`draw_wolf`，精细毛发/明暗/耳朵/红眼），黑狼头目专属深色鬃刺 sprite（`wolf_boss_pixel_sheet.png`，控制器按 `monster_id` 换图 + 攻击前扑）。
+- 战斗修复：
+  - 玩家/敌人身体分碰撞层（玩家 16、敌人 32，皆只与墙层 1 碰撞），不再互相阻挡/粘住。
+  - 近战伤害改为攻击方轮询（`hitbox.poll_hits` + 每次挥砍去重），去掉 hurtbox 的 `area_entered` 自动触发，修复重叠时漏伤/自伤；攻击框移除向下偏移。
+  - 森林/地图生成的敌人补设 `set_target(player)`（aggro），并按 `monsters.json.attack_cooldown` 设定各怪攻击速度。
+  - 普攻/技能自动面向 120px 内最近敌人（近战瞄准辅助）。
+- 玩家死亡：HP 归零 → 红闪+「你已倒下·返回青木村」→ 回村满血复活（`health_component.revive`）。
+- 经验/成长：击杀按 `monsters.json` 发经验+金币，经验满自动升级（+攻/+HP 并回满），HUD 等级/EXP/金币更新。
+- 掉落拾取：修复玩家换层导致的检测失效，新增 E 拾取（`dropped_item` 组）。
+- 尸体：死亡停留 0.8s 后淡出移除。
+- 地图：新增黑石矿洞 `blackstone_mine.tscn` + 森林东侧切换点；`greenwood_village.transitions`/森林→村改为返回**接口出生点**（村东门 / 森林矿洞口），不再回原点。
+- 数值：野狼攻击 8→5、冷却数据化；黑狼头目攻击 16→10。
+
+验证：
+
+- 新增 `v11_forest_combat_test`（aggro/连续命中/不自伤/野狼反伤）、`v12_player_death_test`（死亡回村满血）、`v13_drop_pickup_test`（E 拾取）、`v14_progression_map_test`（击杀发经验金币 + 森林↔矿洞流转与接口出生）。
+- 更新 `combat_playthrough_test` 数值（野狼伤害 3）。
+- 全量断言测试 21/21 `PASS`。
+
+待办：人物/怪物立绘精细度进一步提升（参考星露谷物语质感）。
+
 ## 2026-07-11 UI 整改：三面板、HUD 两列重排、目标信息与地图切换
 
 完成：

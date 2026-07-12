@@ -33,6 +33,9 @@ texture = ExtResource("4_bg")
 [node name="VillageSpawn" type="Marker2D" parent="SpawnPoints"]
 position = Vector2(-240, 110)
 
+[node name="VillageEastGate" type="Marker2D" parent="SpawnPoints"]
+position = Vector2(470, 20)
+
 [node name="TransitionPoints" type="Node2D" parent="."]
 
 [node name="ToBlackWolfForest" type="Marker2D" parent="TransitionPoints"]

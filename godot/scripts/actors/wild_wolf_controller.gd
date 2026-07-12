@@ -3,15 +3,21 @@ extends CharacterBody2D
 const GameDataScript := preload("res://scripts/data/game_data.gd")
 const LootTableScript := preload("res://scripts/loot/loot_table.gd")
 const DroppedItemScene := preload("res://scenes/loot/dropped_item.tscn")
+const BossSheet := preload("res://assets/sprites/wolf_boss_pixel_sheet.png")
+
+const WOLF_FRAME_W := 64
+const WOLF_FRAME_H := 40
+const WOLF_FRAME_COUNT := 4
+const WOLF_FRAME_TIME := 0.14
 
 @export var max_hp: int = 50
-@export var attack: int = 8
+@export var attack: int = 5
 @export var defense: int = 1
 @export var monster_id: String = "wild_wolf"
 @export var move_speed: float = 70.0
 @export var aggro_range: float = 280.0
 @export var attack_range: float = 42.0
-@export var attack_cooldown: float = 0.9
+@export var attack_cooldown: float = 1.3
 @export var attack_active_time: float = 0.16
 @export var hurt_pause: float = 0.18
 
@@ -30,6 +36,14 @@ var _attack_cooldown_timer: float = 0.0
 var _attack_active_timer: float = 0.0
 var _hurt_timer: float = 0.0
 var _combat_initialized: bool = false
+var _anim_frame: int = 0
+var _anim_time: float = 0.0
+var _lunge_time: float = 0.0
+var _lunge_dir: Vector2 = Vector2.ZERO
+const LUNGE_DURATION := 0.22
+const LUNGE_DISTANCE := 16.0
+const CORPSE_LINGER := 0.8
+const CORPSE_FADE := 0.6
 
 @onready var health_component: Node = $HealthComponent
 @onready var attack_hitbox: Area2D = $AttackHitbox
@@ -63,6 +77,9 @@ func _ensure_combat_initialized() -> void:
 	attack_hitbox.setup(self, attack)
 	_set_attack_hitbox_enabled(false)
 	health_bar.bind(health_component)
+	# The black wolf leader uses its own bulkier, darker boss sheet.
+	if monster_id == "black_wolf_leader" and generated_sprite != null:
+		generated_sprite.texture = BossSheet
 	_combat_initialized = true
 
 
@@ -108,7 +125,31 @@ func _physics_process(delta: float) -> void:
 		current_state = State.CHASE
 		velocity = to_target.normalized() * move_speed
 
+	_update_wolf_animation(delta)
 	_safe_move_and_slide()
+
+
+func _update_wolf_animation(delta: float) -> void:
+	if generated_sprite == null:
+		return
+	# Cycle the trot frames only while chasing; hold frame 0 otherwise.
+	if current_state == State.CHASE:
+		_anim_time += delta
+		if _anim_time >= WOLF_FRAME_TIME:
+			_anim_time -= WOLF_FRAME_TIME
+			_anim_frame = (_anim_frame + 1) % WOLF_FRAME_COUNT
+	else:
+		_anim_frame = 0
+		_anim_time = 0.0
+	generated_sprite.region_rect = Rect2(_anim_frame * WOLF_FRAME_W, 0, WOLF_FRAME_W, WOLF_FRAME_H)
+
+	# Attack lunge: pop the sprite toward the target and ease it back.
+	if _lunge_time > 0.0:
+		_lunge_time = maxf(0.0, _lunge_time - delta)
+		var t := _lunge_time / LUNGE_DURATION
+		generated_sprite.position = _lunge_dir * (LUNGE_DISTANCE * t)
+	else:
+		generated_sprite.position = Vector2.ZERO
 
 
 func _safe_move_and_slide() -> void:
@@ -123,6 +164,8 @@ func _update_timers(delta: float) -> void:
 		_attack_cooldown_timer = maxf(0.0, _attack_cooldown_timer - delta)
 
 	if _attack_active_timer > 0.0:
+		if attack_hitbox != null and attack_hitbox.has_method("poll_hits"):
+			attack_hitbox.poll_hits()
 		_attack_active_timer = maxf(0.0, _attack_active_timer - delta)
 		if _attack_active_timer == 0.0:
 			_set_attack_hitbox_enabled(false)
@@ -141,6 +184,9 @@ func _try_attack(to_target: Vector2) -> void:
 	_attack_active_timer = attack_active_time
 	_position_attack_hitbox(to_target)
 	_set_attack_hitbox_enabled(true)
+	# Visible bite: lunge the sprite toward the target, then ease back.
+	_lunge_time = LUNGE_DURATION
+	_lunge_dir = to_target.normalized()
 
 
 func _position_attack_hitbox(to_target: Vector2) -> void:
@@ -149,9 +195,14 @@ func _position_attack_hitbox(to_target: Vector2) -> void:
 
 
 func _set_attack_hitbox_enabled(is_enabled: bool) -> void:
-	attack_hitbox.enabled = is_enabled
-	attack_hitbox.monitoring = is_enabled
-	attack_hitbox.monitorable = is_enabled
+	if attack_hitbox == null:
+		return
+	if is_enabled and attack_hitbox.has_method("begin_swing"):
+		attack_hitbox.begin_swing()
+	elif attack_hitbox.has_method("end_swing"):
+		attack_hitbox.end_swing()
+	else:
+		attack_hitbox.enabled = is_enabled
 
 
 func _on_damaged(amount: int, _source: Variant) -> void:
@@ -170,7 +221,14 @@ func _on_died(_source: Variant) -> void:
 	$Hurtbox.monitoring = false
 	$Hurtbox.monitorable = false
 	body_collision.disabled = true
+	if has_node("HealthBar"):
+		$HealthBar.visible = false
 	_spawn_loot()
+	# Let the corpse linger briefly, then fade it out and remove it.
+	var tween := create_tween()
+	tween.tween_interval(CORPSE_LINGER)
+	tween.tween_property(self, "modulate:a", 0.0, CORPSE_FADE)
+	tween.tween_callback(queue_free)
 
 
 func _spawn_damage_number(amount: int) -> void:

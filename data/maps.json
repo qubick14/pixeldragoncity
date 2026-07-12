@@ -5,9 +5,15 @@
     "type": "town",
     "default_spawn": "village_spawn",
     "spawns": [
-      { "id": "village_spawn", "name": "村中出生点", "position_hint": "village_center_south" }
+      {
+        "id": "village_spawn",
+        "name": "村中出生点",
+        "position_hint": "village_center_south"
+      }
     ],
-    "connections": ["black_wolf_forest"],
+    "connections": [
+      "black_wolf_forest"
+    ],
     "transitions": [
       {
         "id": "to_black_wolf_forest",
@@ -15,7 +21,11 @@
         "target_spawn_id": "forest_entry"
       }
     ],
-    "npcs": ["village_chief", "merchant", "blacksmith"],
+    "npcs": [
+      "village_chief",
+      "merchant",
+      "blacksmith"
+    ],
     "monster_spawns": []
   },
   {
@@ -24,21 +34,42 @@
     "type": "field",
     "default_spawn": "forest_entry",
     "spawns": [
-      { "id": "forest_entry", "name": "青木村方向入口", "position_hint": "forest_west_entry" }
+      {
+        "id": "forest_entry",
+        "name": "青木村方向入口",
+        "position_hint": "forest_west_entry"
+      }
     ],
-    "connections": ["greenwood_village", "blackstone_mine"],
+    "connections": [
+      "greenwood_village",
+      "blackstone_mine"
+    ],
     "transitions": [
       {
         "id": "to_greenwood_village",
         "target_map_id": "greenwood_village",
-        "target_spawn_id": "village_spawn"
+        "target_spawn_id": "village_east_gate"
+      },
+      {
+        "id": "to_blackstone_mine",
+        "target_map_id": "blackstone_mine",
+        "target_spawn_id": "mine_entry"
       }
     ],
     "npcs": [],
     "monster_spawns": [
-      { "monster_id": "wild_rabbit", "count": 4 },
-      { "monster_id": "wild_wolf", "count": 8 },
-      { "monster_id": "black_wolf_leader", "count": 1 }
+      {
+        "monster_id": "wild_rabbit",
+        "count": 4
+      },
+      {
+        "monster_id": "wild_wolf",
+        "count": 8
+      },
+      {
+        "monster_id": "black_wolf_leader",
+        "count": 1
+      }
     ]
   },
   {
@@ -47,10 +78,22 @@
     "type": "dungeon",
     "default_spawn": "mine_entry",
     "spawns": [
-      { "id": "mine_entry", "name": "矿洞入口", "position_hint": "future_content" }
+      {
+        "id": "mine_entry",
+        "name": "矿洞入口",
+        "position_hint": "future_content"
+      }
     ],
-    "connections": ["black_wolf_forest"],
-    "transitions": [],
+    "connections": [
+      "black_wolf_forest"
+    ],
+    "transitions": [
+      {
+        "id": "to_black_wolf_forest",
+        "target_map_id": "black_wolf_forest",
+        "target_spawn_id": "forest_mine_gate"
+      }
+    ],
     "npcs": [],
     "monster_spawns": []
   }

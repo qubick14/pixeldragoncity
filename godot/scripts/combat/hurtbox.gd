@@ -3,10 +3,6 @@ extends Area2D
 @export var health_component_path: NodePath
 
 
-func _ready() -> void:
-	area_entered.connect(_on_area_entered)
-
-
 func receive_hit(hitbox: Area2D) -> int:
 	if hitbox == null:
 		return 0
@@ -36,7 +32,3 @@ func _is_valid_hitbox(hitbox: Area2D) -> bool:
 		return false
 
 	return true
-
-
-func _on_area_entered(area: Area2D) -> void:
-	receive_hit(area)

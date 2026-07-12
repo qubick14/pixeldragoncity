@@ -55,5 +55,11 @@ func heal(amount: int) -> int:
 	return restored
 
 
+func revive(to_hp: int = -1) -> void:
+	current_hp = max_hp if to_hp < 0 else clampi(to_hp, 1, max_hp)
+	_dead_signal_emitted = false
+	health_changed.emit(current_hp, max_hp)
+
+
 func is_dead() -> bool:
 	return current_hp <= 0

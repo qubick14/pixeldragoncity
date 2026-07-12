@@ -188,6 +188,7 @@ func _perform_attack(damage: int, cooldown: float) -> bool:
 	animation_state = AnimationState.ATTACK
 	if attack_hitbox != null:
 		attack_hitbox.attack = maxi(1, damage)
+	_aim_at_nearest_enemy()
 	_position_attack_hitbox()
 	_apply_attack_visual_offset()
 	_set_attack_hitbox_enabled(true)
@@ -277,10 +278,37 @@ func _update_attack_timers(delta: float) -> void:
 	if _attack_active_timer <= 0.0:
 		return
 
+	# Poll for hits every active frame so a swing that starts already overlapping
+	# an enemy still connects.
+	var active_hitbox := _get_attack_hitbox()
+	if active_hitbox != null and active_hitbox.has_method("poll_hits"):
+		active_hitbox.poll_hits()
+
 	_attack_active_timer = maxf(0.0, _attack_active_timer - delta)
 	if _attack_active_timer == 0.0:
 		_set_attack_hitbox_enabled(false)
 		_hide_attack_slash()
+
+
+func _aim_at_nearest_enemy() -> void:
+	# Melee assist: face the nearest living enemy in range so the directional swing
+	# connects even when standing still (facing would otherwise be the last move dir).
+	var nearest: Node2D = null
+	var best := INF
+	for enemy in get_tree().get_nodes_in_group("enemy"):
+		if not enemy is Node2D:
+			continue
+		var hc := enemy.get_node_or_null("HealthComponent")
+		if hc != null and hc.has_method("is_dead") and hc.is_dead():
+			continue
+		var d: float = global_position.distance_to(enemy.global_position)
+		if d < best:
+			best = d
+			nearest = enemy
+	if nearest != null and best <= 120.0:
+		var dir: Vector2 = nearest.global_position - global_position
+		if dir.length() > 0.1:
+			facing_direction = dir.normalized()
 
 
 func _position_attack_hitbox() -> void:
@@ -299,10 +327,12 @@ func _set_attack_hitbox_enabled(is_enabled: bool) -> void:
 	var active_hitbox := _get_attack_hitbox()
 	if active_hitbox == null:
 		return
-
-	active_hitbox.enabled = is_enabled
-	active_hitbox.monitoring = is_enabled
-	active_hitbox.monitorable = is_enabled
+	if is_enabled and active_hitbox.has_method("begin_swing"):
+		active_hitbox.begin_swing()
+	elif active_hitbox.has_method("end_swing"):
+		active_hitbox.end_swing()
+	else:
+		active_hitbox.enabled = is_enabled
 
 
 func _get_attack_hitbox() -> Area2D:

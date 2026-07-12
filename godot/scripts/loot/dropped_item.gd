@@ -4,6 +4,7 @@ var _payload: Dictionary = {}
 
 
 func _ready() -> void:
+	add_to_group("dropped_item")
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
 

@@ -69,9 +69,9 @@ func _test_main_scene_combat_playthrough(failures: Array[String]) -> void:
 	var player_health := player.get_node("HealthComponent")
 	wolf_hitbox.setup(wolf, wolf.attack)
 	var wolf_damage: int = player_hurtbox.receive_hit(wolf_hitbox)
-	_assert_equal(wolf_damage, 6, "wolf hitbox should damage player through real main scene nodes", failures)
-	_assert_equal(player_health.current_hp, 94, "player HP should decrease after wolf attack", failures)
-	_assert_equal(hp_value.text, "94/100", "HUD should update after player takes damage", failures)
+	_assert_equal(wolf_damage, 3, "wolf hitbox should damage player through real main scene nodes", failures)
+	_assert_equal(player_health.current_hp, 97, "player HP should decrease after wolf attack", failures)
+	_assert_equal(hp_value.text, "97/100", "HUD should update after player takes damage", failures)
 
 	for _i in range(4):
 		wolf_hurtbox.receive_hit(player_hitbox)
