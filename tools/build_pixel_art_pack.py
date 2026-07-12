@@ -126,51 +126,68 @@ def fill_ground(draw, w, h, base, speckles, rng, density=0.10, blade=None):
     `blade`, if given, is a colour used to stipple short vertical grass tufts.
     """
     draw.rectangle([0, 0, w, h], fill=base)
-    # 2x2 dither patches
+    # large soft mottled patches for tonal variation across the field
+    for _ in range(int(w * h * 0.0004)):
+        col = rng.choice(speckles)
+        cx = rng.randint(0, w)
+        cy = rng.randint(0, h)
+        rx = rng.randint(12, 30)
+        ry = rng.randint(8, 18)
+        draw.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=col)
+    # 2x2 dither patches to break up the patch edges
     for by in range(0, h, 2):
         for bx in range(0, w, 2):
             if rng.random() < density:
                 col = rng.choice(speckles)
                 draw.rectangle([bx, by, bx + 1, by + 1], fill=col)
-    # scattered grass tufts (three-pixel little blades)
+    # grass tufts: dark stem + lighter tip (two-tone little blades)
     if blade is not None:
-        for _ in range(int(w * h * 0.0016)):
+        tip = _shade(blade, 24)
+        for _ in range(int(w * h * 0.0034)):
             x = rng.randint(2, w - 3)
-            y = rng.randint(2, h - 3)
+            y = rng.randint(3, h - 3)
             draw.point((x, y), fill=blade)
-            draw.point((x, y - 1), fill=blade)
             draw.point((x - 1, y), fill=blade)
             draw.point((x + 1, y - 1), fill=blade)
+            draw.point((x, y - 2), fill=tip)
+            draw.point((x + 1, y - 2), fill=tip)
 
 
 def draw_path(draw, points, half_width, base, edge, spec, rng):
-    """Draw a soft dirt path along a polyline (list of (x,y))."""
-    # thick line segments
-    for i in range(len(points) - 1):
-        x0, y0 = points[i]
-        x1, y1 = points[i + 1]
-        steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
-        for s in range(steps + 1):
-            t = s / steps
-            cx = x0 + (x1 - x0) * t
-            cy = y0 + (y1 - y0) * t
-            r = half_width + rng.randint(-2, 2)
-            draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=base)
-    # speckle + edge highlight pass over the painted area is approximated by
-    # scattering lighter/darker pebbles near the centre line
-    for i in range(len(points) - 1):
-        x0, y0 = points[i]
-        x1, y1 = points[i + 1]
-        steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
-        for s in range(0, steps + 1, 2):
-            t = s / steps
-            cx = int(x0 + (x1 - x0) * t)
-            cy = int(y0 + (y1 - y0) * t)
-            for _ in range(int(half_width * 0.9)):
-                px = cx + rng.randint(-half_width, half_width)
-                py = cy + rng.randint(-half_width, half_width)
-                if (px - cx) ** 2 + (py - cy) ** 2 <= (half_width - 1) ** 2:
-                    draw.point((px, py), fill=rng.choice(spec))
+    """Draw a soft dirt path along a polyline (list of (x,y)) with a darker
+    worn edge, pebbles and faint ruts."""
+    rim = _shade(base, -26)   # darker packed-earth edge
+
+    def _walk(step):
+        for i in range(len(points) - 1):
+            x0, y0 = points[i]
+            x1, y1 = points[i + 1]
+            steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
+            for s in range(0, steps + 1, step):
+                t = s / steps
+                yield x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+
+    # 1) darker rim, then 2) lighter packed centre -> leaves a worn edge band
+    for cx, cy in _walk(1):
+        r = half_width + rng.randint(-2, 2)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=rim)
+    for cx, cy in _walk(1):
+        r = half_width - 3 + rng.randint(-2, 2)
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=base)
+    # 3) pebbles / grit scattered over the centre
+    for cx, cy in _walk(2):
+        cx, cy = int(cx), int(cy)
+        for _ in range(int(half_width * 0.9)):
+            px = cx + rng.randint(-half_width, half_width)
+            py = cy + rng.randint(-half_width, half_width)
+            if (px - cx) ** 2 + (py - cy) ** 2 <= (half_width - 3) ** 2:
+                draw.point((px, py), fill=rng.choice(spec))
+    # 4) faint ruts along the travel direction
+    for cx, cy in _walk(3):
+        if rng.random() < 0.25:
+            cx, cy = int(cx), int(cy)
+            off = rng.choice([-half_width // 2, half_width // 2, 0])
+            draw.line([cx - 4, cy + off, cx + 4, cy + off], fill=rim)
 
 
 def stamp_tree(img, cx, cy, scale=1, boss=False):
