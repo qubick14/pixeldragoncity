@@ -86,15 +86,11 @@ func _update_stats(stats: Dictionary) -> void:
 
 
 func _ensure_panel_background() -> void:
-	if has_node("PanelBackground"):
-		return
-	var background := ColorRect.new()
-	background.name = "PanelBackground"
-	background.color = Color(0.075, 0.055, 0.04, 0.92)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.offset_left = -16.0
-	background.offset_top = -16.0
-	background.offset_right = 16.0
-	background.offset_bottom = 16.0
-	add_child(background)
-	move_child(background, 0)
+	var fresh := not has_node("PanelBackground")
+	UiTheme.add_panel_bg(self)
+	if fresh:
+		UiTheme.style_title(get_node_or_null("TitleLabel"), "装备")
+		UiTheme.style_frame(get_node_or_null("PortraitFrame"))
+		var stats := get_node_or_null("StatsList") as Label
+		if stats != null:
+			stats.add_theme_color_override("font_color", UiTheme.PARCHMENT)

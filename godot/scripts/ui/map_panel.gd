@@ -96,11 +96,4 @@ func _build() -> void:
 
 
 func _ensure_panel_background() -> void:
-	if has_node("PanelBackground"):
-		return
-	var background := ColorRect.new()
-	background.name = "PanelBackground"
-	background.color = Color(0.075, 0.055, 0.04, 0.95)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	move_child(background, 0)
+	UiTheme.add_panel_bg(self)

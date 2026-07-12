@@ -73,7 +73,7 @@ func _test_inventory_panel(failures: Array[String]) -> void:
 
 	panel.set_inventory(_sample_inventory_slots())
 	_assert_equal(panel.get_slot_count(), 30, "inventory panel should render 30 slots", failures)
-	_assert_equal(panel.get_node("TitleLabel").text, "Inventory", "inventory panel title should be Inventory", failures)
+	_assert_equal(panel.get_node("TitleLabel").text, "背包", "inventory panel title should be localized", failures)
 	_assert_equal(panel.get_slot(0).get_item_id(), "small_health_potion", "first inventory slot should expose filled item id", failures)
 	_assert_equal(panel.get_slot(5).get_item_id(), "", "empty inventory slot should remain empty", failures)
 

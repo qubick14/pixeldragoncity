@@ -66,9 +66,4 @@ func get_item_id() -> String:
 
 
 func _apply_slot_style(filled: bool) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.16, 0.12, 0.08, 0.94) if filled else Color(0.08, 0.065, 0.05, 0.92)
-	style.border_color = Color(0.62, 0.42, 0.18, 1.0)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(0)
-	add_theme_stylebox_override("panel", style)
+	add_theme_stylebox_override("panel", UiTheme.inset_slot(filled))

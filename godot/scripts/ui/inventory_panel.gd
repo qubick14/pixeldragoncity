@@ -58,15 +58,5 @@ func _on_slot_pressed(double_click: bool, index: int) -> void:
 
 
 func _ensure_panel_background() -> void:
-	if has_node("PanelBackground"):
-		return
-	var background := ColorRect.new()
-	background.name = "PanelBackground"
-	background.color = Color(0.075, 0.055, 0.04, 0.92)
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.offset_left = -16.0
-	background.offset_top = -16.0
-	background.offset_right = 16.0
-	background.offset_bottom = 16.0
-	add_child(background)
-	move_child(background, 0)
+	UiTheme.add_panel_bg(self)
+	UiTheme.style_title(get_node_or_null("TitleLabel"), "背包")
